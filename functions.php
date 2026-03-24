@@ -26,7 +26,7 @@ function awbase_enqueue_scripts() {
     wp_enqueue_style( 'awbase-style', get_stylesheet_uri(), array(), $theme_version );
     
     // Front-end JS (if any)
-    // wp_enqueue_script( 'awbase-script', get_template_directory_uri() . '/assets/js/main.js', array('jquery'), $theme_version, true );
+    wp_enqueue_script( 'awbase-script', get_template_directory_uri() . '/assets/js/main.js', array('jquery'), $theme_version, true );
 
     // Font Awesome 6 (Can be toggled via admin settings later)
     wp_enqueue_style( 'font-awesome', 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css', array(), '6.4.0' );
@@ -43,9 +43,10 @@ define( 'AWBASE_URI', get_template_directory_uri() );
 require_once AWBASE_DIR . '/inc/admin.php';
 require_once AWBASE_DIR . '/inc/customizer.php';
 require_once AWBASE_DIR . '/inc/style-output.php';
-// require_once AWBASE_DIR . '/inc/seo.php';
-// require_once AWBASE_DIR . '/inc/ai-tracker.php';
-// require_once AWBASE_DIR . '/inc/performance.php';
-// require_once AWBASE_DIR . '/inc/shortcodes.php';
-// require_once AWBASE_DIR . '/inc/widgets.php';
-// require_once AWBASE_DIR . '/inc/llms-txt.php';
+require_once AWBASE_DIR . '/inc/seo.php';
+require_once AWBASE_DIR . '/inc/post-meta.php';
+require_once AWBASE_DIR . '/inc/ai-tracker.php';
+require_once AWBASE_DIR . '/inc/performance.php';
+require_once AWBASE_DIR . '/inc/shortcodes.php';
+require_once AWBASE_DIR . '/inc/widgets.php';
+require_once AWBASE_DIR . '/inc/llms-txt.php';
