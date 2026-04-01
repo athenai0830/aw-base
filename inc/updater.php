@@ -75,7 +75,8 @@ add_action( 'delete_site_transient_update_themes', 'awbase_delete_update_cache' 
  * （GitHub自動生成zipは "athenai0830-aw-base-{hash}" というフォルダ名になるため）
  */
 function awbase_fix_theme_update_source( $source, $remote_source, $upgrader ) {
-    if ( ! isset( $upgrader->skin->theme ) || $upgrader->skin->theme !== 'aw-base' ) {
+    // フォルダ名に "aw-base" が含まれている場合のみ処理
+    if ( strpos( basename( $source ), 'aw-base' ) === false ) {
         return $source;
     }
 
@@ -83,8 +84,9 @@ function awbase_fix_theme_update_source( $source, $remote_source, $upgrader ) {
 
     if ( $source !== $corrected ) {
         global $wp_filesystem;
-        $wp_filesystem->move( $source, $corrected );
-        return $corrected;
+        if ( $wp_filesystem->move( $source, $corrected ) ) {
+            return $corrected;
+        }
     }
 
     return $source;

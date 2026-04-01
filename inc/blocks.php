@@ -25,6 +25,9 @@ add_action( 'init', 'awbase_register_block_assets' );
 // エディターのみでスクリプトを読み込む
 add_action( 'enqueue_block_editor_assets', function() {
     wp_enqueue_script( 'awbase-blocks' );
+    wp_localize_script( 'awbase-blocks', 'awbaseEditor', array(
+        'postsPerPage' => (int) get_option( 'posts_per_page', 10 ),
+    ) );
 } );
 
 // ブロック登録

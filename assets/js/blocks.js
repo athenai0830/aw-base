@@ -392,6 +392,43 @@
         edit: function (props) {
             var a = props.attributes;
             var blockProps = useBlockProps({ style: { padding: '8px' } });
+            var useState  = wp.element.useState;
+            var useEffect = wp.element.useEffect;
+
+            var stateArr = useState({ posts: [], loading: true });
+            var state = stateArr[0], setState = stateArr[1];
+
+            useEffect(function () {
+                setState({ posts: [], loading: true });
+                var perPage = (window.awbaseEditor && window.awbaseEditor.postsPerPage) ? window.awbaseEditor.postsPerPage : 10;
+                var path = '/wp/v2/posts?per_page=' + perPage + '&_embed&status=publish';
+                if (a.cats) { path += '&categories=' + encodeURIComponent(a.cats); }
+                wp.apiFetch({ path: path }).then(function (fetched) {
+                    setState({ posts: fetched, loading: false });
+                }).catch(function () {
+                    setState({ posts: [], loading: false });
+                });
+            }, [a.cats]);
+
+            var posts   = state.posts;
+            var loading = state.loading;
+
+            var cardStyle = {
+                display: 'flex', alignItems: 'center', gap: '10px',
+                padding: '7px 0', borderBottom: '1px solid #f0f0f0'
+            };
+            var thumbBoxStyle = {
+                flexShrink: 0, width: '72px', height: '48px',
+                borderRadius: '4px', overflow: 'hidden', background: '#e8e8e8'
+            };
+            var thumbImgStyle  = { width: '100%', height: '100%', objectFit: 'cover', display: 'block' };
+            var thumbNoneStyle = { width: '100%', height: '100%', background: '#ddd' };
+            var titleStyle = {
+                fontSize: '13px', fontWeight: '500', color: '#333',
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: '1.4'
+            };
+            var dateStyle  = { fontSize: '11px', color: '#999', marginTop: '2px' };
+
             return el('div', blockProps,
                 el(InspectorControls, null,
                     el(PanelBody, { title: '新着記事一覧 設定', initialOpen: true },
@@ -424,7 +461,38 @@
                         })
                     )
                 ),
-                el(ServerSideRender, { block: 'aw-base/new-list', attributes: a })
+                el('div', { style: { border: '1px solid #ddd', borderRadius: '4px', padding: '10px 12px', background: '#fff' } },
+                    // ブロックヘッダー
+                    el('div', { style: { display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', paddingBottom: '8px', borderBottom: '2px solid #94a3b8' } },
+                        el('span', { style: { fontSize: '11px', fontWeight: '700', color: '#fff', background: '#64748b', padding: '2px 8px', borderRadius: '3px', letterSpacing: '0.03em' } }, '新着記事一覧'),
+                        a.title
+                            ? el('span', { style: { fontSize: '13px', fontWeight: '600', color: '#333' } }, a.title)
+                            : el('span', { style: { fontSize: '12px', color: '#aaa' } }, '（タイトルなし）')
+                    ),
+                    // 記事リスト
+                    loading
+                        ? el('p', { style: { color: '#aaa', fontSize: '12px', textAlign: 'center', padding: '12px 0', margin: 0 } }, '読み込み中...')
+                        : posts.length === 0
+                            ? el('p', { style: { color: '#aaa', fontSize: '12px', textAlign: 'center', padding: '12px 0', margin: 0 } }, '記事が見つかりません')
+                            : el('div', null,
+                                posts.map(function (post) {
+                                    var media   = post._embedded && post._embedded['wp:featuredmedia'] && post._embedded['wp:featuredmedia'][0];
+                                    var thumbUrl = media ? (media.media_details && media.media_details.sizes && media.media_details.sizes.thumbnail ? media.media_details.sizes.thumbnail.source_url : media.source_url) : '';
+                                    var dateStr = post.date ? post.date.slice(0, 10) : '';
+                                    return el('div', { key: post.id, style: cardStyle },
+                                        el('div', { style: thumbBoxStyle },
+                                            thumbUrl
+                                                ? el('img', { src: thumbUrl, alt: '', style: thumbImgStyle })
+                                                : el('div', { style: thumbNoneStyle })
+                                        ),
+                                        el('div', { style: { flex: 1, minWidth: 0 } },
+                                            el('div', { style: titleStyle }, post.title.rendered),
+                                            el('div', { style: dateStyle }, dateStr)
+                                        )
+                                    );
+                                })
+                            )
+                )
             );
         },
         save: function () { return null; }
