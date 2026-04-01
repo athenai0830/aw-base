@@ -82,11 +82,23 @@ function awbase_fix_theme_update_source( $source, $remote_source, $upgrader ) {
 
     $corrected = trailingslashit( $remote_source ) . 'aw-base/';
 
-    if ( $source !== $corrected ) {
-        global $wp_filesystem;
-        if ( $wp_filesystem->move( $source, $corrected ) ) {
-            return $corrected;
-        }
+    // すでに正しい名前なら何もしない
+    if ( rtrim( $source, '/' ) === rtrim( $corrected, '/' ) ) {
+        return $source;
+    }
+
+    global $wp_filesystem;
+    if ( ! $wp_filesystem ) {
+        return $source;
+    }
+
+    // 移動先が既に存在する場合は削除してから移動
+    if ( $wp_filesystem->is_dir( $corrected ) ) {
+        $wp_filesystem->delete( $corrected, true );
+    }
+
+    if ( $wp_filesystem->move( $source, $corrected ) ) {
+        return $corrected;
     }
 
     return $source;
