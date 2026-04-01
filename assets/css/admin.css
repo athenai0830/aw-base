@@ -1,10 +1,535 @@
 /* AW-Base Admin CSS */
-.awbase-preview-color {
+
+/* 投稿一覧 サムネイルカラム */
+.column-awbase_thumb { width: 62px !important; }
+td.column-awbase_thumb { padding: 6px 8px !important; vertical-align: middle; }
+.awbase-col-thumb {
+    display: block !important;
+    width: 46px !important;
+    height: 46px !important;
+    object-fit: cover;
+    border-radius: 4px;
+}
+.awbase-col-thumb-none { color: #ccc; font-size: 13px; }
+
+/* 投稿一覧 AI カラム（プラグイン無効時のテーマ表示） */
+.column-awbase_ai_hits { width: 70px !important; }
+
+.awbase-ai-col {
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+/* D/W/M/All 縦並び */
+.awbase-ai-counts div {
+    display: block !important;
+    color: #50575e;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ツールチップトリガー */
+.awbase-ai-trigger {
+    position: relative;
     display: inline-block;
-    width: 20px;
-    height: 20px;
-    vertical-align: middle;
-    margin-right: 5px;
-    border: 1px solid #ccc;
+    margin-top: 3px;
+    color: #2271b1;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.awbase-ai-trigger:hover { text-decoration: underline; }
+
+/* ツールチップ本体 */
+.awbase-ai-tooltip {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 0;
+    z-index: 100000;
+    background: #333 !important;
+    color: #fff !important;
+    border-radius: 6px;
+    padding: 8px 12px;
+    white-space: nowrap;
+    font-size: 11px;
+    font-weight: 400;
+    line-height: 1.5;
+    box-shadow: 0 4px 12px rgba(0,0,0,.25);
+}
+.awbase-ai-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 14px;
+    border: 6px solid transparent;
+    border-top-color: #333;
+}
+.awbase-ai-trigger:hover .awbase-ai-tooltip { display: block; }
+
+/* ツールチップ内の各行 */
+.awbase-ai-tip-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 2px 0;
+    border-bottom: 1px solid rgba(255,255,255,.1);
+}
+.awbase-ai-tip-row:last-child { border-bottom: none; }
+
+/* ヘッダーのAWロゴマーク */
+.wrap h1 .aw-logo-mark {
+    background: #c30e24;
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 700;
+    margin-right: 4px;
+}
+
+/* タブのFont Awesomeアイコン色 */
+.nav-tab i { color: #c30e24; }
+.nav-tab.nav-tab-active i { color: #c30e24; }
+
+/* カラースウォッチ */
+.color-swatches {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+.swatch-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+}
+.swatch-item input[type="radio"] { display: none; }
+.swatch-circle {
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
+    border: 3px solid transparent;
+    transition: transform 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.swatch-item input:checked + .swatch-circle {
+    border-color: #2271b1;
+    transform: scale(1.1);
+}
+.swatch-item input:checked + .swatch-circle::after {
+    content: "✓";
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+.swatch-label { font-size: 11px; color: #50575e; text-align: center; }
+.swatch-original { background: linear-gradient(135deg, #c30e24 0%, #11114d 100%); }
+.swatch-blacktan { background: linear-gradient(135deg, #1a1a1a 0%, #8B6914 100%); }
+.swatch-chocotan { background: linear-gradient(135deg, #5C3317 0%, #C47722 100%); }
+.swatch-cream { background: linear-gradient(135deg, #D4A017 0%, #FFFBF0 100%); border: 1px solid #ddd; }
+.swatch-bluetan { background: linear-gradient(135deg, #2563EB 0%, #1E3A5F 100%); }
+.swatch-white { background: linear-gradient(135deg, #374151 0%, #F9FAFB 100%); border: 1px solid #ddd; }
+
+/* ヘッダーパターン選択カード */
+.header-patterns {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+.pattern-card {
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    padding: 10px;
+    cursor: pointer;
+    width: 160px;
+    transition: border-color 0.2s;
+}
+.pattern-card:has(input:checked) {
+    border-color: #2271b1;
+    background: #f0f6fc;
+}
+.pattern-card input[type="radio"] { display: none; }
+.pattern-diagram {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    margin-bottom: 8px;
+}
+.pd-nav { background: #1d2327; height: 10px; border-radius: 2px; }
+.pd-header { background: #e0e0e0; height: 18px; border-radius: 2px; }
+.pd-notice { background: #11114d; height: 6px; border-radius: 2px; }
+.pd-fv { background: linear-gradient(135deg, #667eea, #764ba2); height: 24px; border-radius: 2px; }
+.pattern-name { font-size: 11px; font-weight: 600; color: #50575e; text-align: center; }
+
+/* 画像アップロードフィールド */
+.awbase-image-upload-wrap {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+}
+.awbase-image-preview {
+    width: 80px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    display: none;
+}
+.awbase-image-preview.has-image { display: block; }
+.awbase-upload-btn {
+    background: #2271b1;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 14px;
+    cursor: pointer;
+    font-size: 13px;
+}
+.awbase-upload-btn:hover { background: #135e96; }
+.awbase-remove-btn {
+    background: none;
+    border: 1px solid #c0392b;
+    color: #c0392b;
+    border-radius: 4px;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-size: 12px;
+}
+.awbase-remove-btn:hover { background: #c0392b; color: #fff; }
+
+/* スライダー */
+.slider-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+input[type="range"] {
+    -webkit-appearance: none;
+    width: 200px;
+    height: 4px;
+    border-radius: 2px;
+    background: #ddd;
+    border: none;
+    padding: 0;
+}
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #2271b1;
+    cursor: pointer;
+}
+.slider-value {
+    min-width: 40px;
+    text-align: right;
+    font-size: 13px;
+    color: #50575e;
+}
+
+/* セクション区切り */
+.awbase-section-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: #1d2327;
+    border-bottom: 2px solid #c30e24;
+    padding-bottom: 6px;
+    margin: 24px 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.awbase-section-title:first-child { margin-top: 0; }
+.awbase-section-title i { color: #c30e24; }
+
+/* トグルスイッチ */
+.awbase-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    margin-bottom: 14px;
+    line-height: 1.4;
+    user-select: none;
+    max-width: 680px;
+    vertical-align: top;
+}
+.awbase-toggle input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+.awbase-toggle-slider {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    background: #c3c4c7;
+    border-radius: 12px;
+    transition: background 0.2s;
+    flex-shrink: 0;
+}
+.awbase-toggle-slider::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    transition: transform 0.2s;
+}
+.awbase-toggle input:checked + .awbase-toggle-slider {
+    background: #2271b1;
+}
+.awbase-toggle input:checked + .awbase-toggle-slider::after {
+    transform: translateX(20px);
+}
+.awbase-toggle-label {
+    font-size: 13px;
+    color: #1d2327;
+}
+
+/* セグメントコントロール（3択ラジオ） */
+.awbase-seg-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+.awbase-seg-label {
+    font-size: 13px;
+    color: #50575e;
+    min-width: 130px;
+    flex-shrink: 0;
+}
+.awbase-seg-ctrl {
+    display: inline-flex;
+    border: 1px solid #c3c4c7;
+    border-radius: 5px;
+    overflow: hidden;
+}
+.awbase-seg-ctrl label {
+    display: flex;
+    align-items: center;
+    padding: 5px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    background: #f6f7f7;
+    border-right: 1px solid #c3c4c7;
+    transition: background 0.15s, color 0.15s;
+    white-space: nowrap;
+    margin: 0;
+}
+.awbase-seg-ctrl label:last-child { border-right: none; }
+.awbase-seg-ctrl input[type="radio"] { display: none; }
+.awbase-seg-ctrl label:has(input:checked) {
+    background: #2271b1;
+    color: #fff;
+    font-weight: 600;
+}
+
+/* 説明文改善 */
+.description {
+    color: #646970;
+    font-size: 12px;
+    margin-top: 4px;
+    line-height: 1.5;
+    display: block;
+}
+
+/* AIトラッキングのグラフエリア */
+.awbase-ai-stats {
+    background: #1d2327;
+    border-radius: 6px;
+    padding: 16px;
+    color: #e0e0e0;
+}
+.awbase-ai-stats-title {
+    font-size: 13px;
+    color: #a7aaad;
+    margin-bottom: 12px;
+}
+.awbase-ai-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-size: 12px;
+}
+.awbase-ai-bar-label { min-width: 80px; color: #a7aaad; }
+.awbase-ai-bar-wrap { flex: 1; background: #2c3338; border-radius: 3px; height: 14px; overflow: hidden; }
+.awbase-ai-bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s; }
+.awbase-ai-bar-count { min-width: 50px; text-align: right; color: #e0e0e0; }
+
+/* フォームテーブルの改善 */
+.form-table th,
+.form-table td {
+    vertical-align: top;
+    padding-top: 20px;
+    padding-bottom: 18px;
+}
+.form-table tr:first-child th,
+.form-table tr:first-child td {
+    padding-top: 10px;
+}
+
+/* フィールド行: <br> で区切られた入力グループ間の余白 */
+.awbase-field-row {
+    margin-bottom: 10px;
+    line-height: 2;
+}
+.awbase-field-row:last-child {
+    margin-bottom: 0;
+}
+
+/* number/text 入力と隣接ラベルの余白 */
+.form-table td input.small-text + br + label,
+.form-table td input.small-text + br + input {
+    margin-top: 6px;
+}
+.form-table td input[type="number"].small-text,
+.form-table td input[type="text"].regular-text,
+.form-table td input[type="url"].regular-text {
+    vertical-align: middle;
+}
+
+/* セクション区切りの初回余白 */
+.awbase-section-title {
+    margin-top: 20px;
+}
+
+/* タブコンテンツの背景 */
+.tab-content-wrap {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-top: none;
+    padding: 20px 24px;
+}
+
+/* 投稿一覧 PV カラム */
+.column-awbase_pv {
+    width: 72px;
+}
+.awbase-pv-col {
+    font-size: 12px;
+    line-height: 1.8;
+    white-space: nowrap;
+}
+
+/* AI Traffic Tracker plugin column */
+.column-ai_traffic {
+    width: 72px;
+}
+.aitt-cell {
+    font-size: 12px;
+    line-height: 1.8;
+}
+.aitt-counts {
+    display: block;
+    white-space: nowrap;
+    font-size: 12px;
+    line-height: 1.8;
+}
+.aitt-tooltip-trigger {
+    display: block;
+    font-size: 10px;
+    color: #888;
+    cursor: pointer;
+    margin-top: 2px;
+}
+
+/* ツールチップ内テーブル（テーマ側）
+   WP管理画面の .widefat th/td 等に負けないよう !important で強制指定 */
+.awbase-ai-tooltip .awbase-ai-tip-table {
+    border-collapse: collapse;
+    font-size: 11px;
+    width: auto;
+    border: none !important;
+    background: transparent !important;
+}
+
+.awbase-ai-tooltip .awbase-ai-tip-table th {
+    padding: 4px 10px 6px !important;
+    color: #cccccc !important;
+    background: transparent !important;
+    font-weight: 600 !important;
+    font-size: 10px !important;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    border: none !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.25) !important;
+    text-align: right !important;
+}
+
+.awbase-ai-tooltip .awbase-ai-tip-table th:first-child {
+    text-align: left !important;
+    padding-left: 0 !important;
+}
+
+.awbase-ai-tooltip .awbase-ai-tip-table td {
+    padding: 4px 10px !important;
+    color: #ffffff !important;
+    background: transparent !important;
+    font-variant-numeric: tabular-nums;
+    text-align: right !important;
+    border: none !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.awbase-ai-tooltip .awbase-ai-tip-table td:first-child {
+    text-align: left !important;
+    font-weight: 600 !important;
+    padding-left: 0 !important;
+}
+
+.awbase-ai-tooltip .awbase-ai-tip-table tbody tr:last-child td {
+    border-bottom: none !important;
+}
+
+.awbase-ai-tooltip .awbase-ai-tip-table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* ============================================================
+   設定ページヘッダー（タイトル + キャッシュ削除ボタン）
+   ============================================================ */
+.awbase-page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5em;
+}
+
+.awbase-page-header h1 {
+    margin: 0;
+}
+
+.awbase-clear-cache-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #c0392b;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 22px;
+    font-size: 0.95em;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s;
+    line-height: 1.4;
+}
+
+.awbase-clear-cache-btn:hover {
+    background: #a93226;
+    color: #fff;
 }

@@ -2,12 +2,22 @@
 // AW-Base AI Traffic Tracker
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-// 1. Create DB Table on Theme Activation
+// ---------------------------------------------------------------------------
+// 0. テーブル作成（テーマ独自テーブル）
+// ---------------------------------------------------------------------------
+function awbase_ensure_ai_tracker_table() {
+    if ( ! is_admin() ) return;
+    $option_key = 'awbase_ai_tracker_table_v1';
+    if ( get_option( $option_key ) ) return;
+    awbase_create_ai_tracker_table();
+    update_option( $option_key, true );
+}
+add_action( 'admin_init', 'awbase_ensure_ai_tracker_table' );
+
 function awbase_create_ai_tracker_table() {
     global $wpdb;
-    $table_name = $wpdb->prefix . 'ai_traffic_log';
+    $table_name      = $wpdb->prefix . 'ai_traffic_log';
     $charset_collate = $wpdb->get_charset_collate();
-
     $sql = "CREATE TABLE $table_name (
         id bigint(20) NOT NULL AUTO_INCREMENT,
         time datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
@@ -17,63 +27,145 @@ function awbase_create_ai_tracker_table() {
         ip_address varchar(100) NOT NULL,
         PRIMARY KEY  (id)
     ) $charset_collate;";
-
-    require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
+    require_once ABSPATH . 'wp-admin/includes/upgrade.php';
     dbDelta( $sql );
 }
 add_action( 'after_switch_theme', 'awbase_create_ai_tracker_table' );
 
-// 2. Track Traffic
-function awbase_track_ai_bots() {
-    $options = get_option('awbase_settings', awbase_get_default_settings());
-    if ( $options['ai_tracking_enable'] !== '1' ) return;
+// ---------------------------------------------------------------------------
+// 1. ボット識別子 → [サービス名, アクセス種別] マッピング
+//    プラグイン (ai-traffic-tracker) の分類に準拠
+// ---------------------------------------------------------------------------
+function awbase_get_bot_map() {
+    return [
+        // fetch: AIが検索・取得のためにクロール
+        'OAI-SearchBot'         => [ 'ChatGPT',     'fetch' ],
+        'ChatGPT-User'          => [ 'ChatGPT',     'fetch' ],
+        'PerplexityBot'         => [ 'Perplexity',  'fetch' ],
+        'Perplexity-User'       => [ 'Perplexity',  'fetch' ],
+        'Gemini-Deep-Research'  => [ 'Gemini',      'fetch' ],
+        'Google-Gemini'         => [ 'Gemini',      'fetch' ],
+        'GoogleOther'           => [ 'Gemini',      'fetch' ],
+        'Google-CloudVertexBot' => [ 'Gemini',      'fetch' ],
+        'Claude-SearchBot'      => [ 'Claude',      'fetch' ],
+        'Claude-User'           => [ 'Claude',      'fetch' ],
+        'Claude-Web'            => [ 'Claude',      'fetch' ],
+        // learning: AI学習用クロール
+        'GPTBot'                => [ 'ChatGPT',     'learning' ],
+        'ClaudeBot'             => [ 'Claude',      'learning' ],
+        'Anthropic-ai'          => [ 'Claude',      'learning' ],
+        'CCBot'                 => [ 'CommonCrawl', 'learning' ],
+        'cohere-ai'             => [ 'Cohere',      'learning' ],
+        'Google-Extended'       => [ 'Gemini',      'learning' ],
+        'GoogleOther-Image'     => [ 'Gemini',      'learning' ],
+        'GoogleOther-Video'     => [ 'Gemini',      'learning' ],
+        'Bytespider'            => [ 'Bytedance',   'learning' ],
+        // referer: AIサービス経由の訪問
+        'FacebookBot'           => [ 'Facebook',    'referer' ],
+        'Omgili'                => [ 'Omgili',      'referer' ],
+    ];
+}
 
-    if ( is_admin() ) return;
+// bot_identifier → access_type カテゴリ（後方互換用）
+function awbase_get_bot_category( $bot_id ) {
+    $map = awbase_get_bot_map();
+    return isset( $map[ $bot_id ] ) ? $map[ $bot_id ][1] : 'referer';
+}
 
-    $user_agent = isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : '';
-    if ( empty($user_agent) ) return;
+// ---------------------------------------------------------------------------
+// 2. サービス別ブレークダウン構築（両テーブル統合）
+//    返り値: [ 'ChatGPT' => ['referer'=>0, 'learning'=>0, 'fetch'=>0], ... ]
+// ---------------------------------------------------------------------------
+function awbase_build_service_breakdown( $post_id ) {
+    global $wpdb;
+    $plugin_table = $wpdb->prefix . 'ai_traffic_logs';
+    $theme_table  = $wpdb->prefix . 'ai_traffic_log';
 
-    $ai_bots = array(
-        'ChatGPT-User',
-        'GPTBot',
-        'Google-Extended',
-        'Anthropic-ai',
-        'Claude-Web',
-        'PerplexityBot',
-        'Omgili',
-        'FacebookBot',
-        'CCBot',
-        'Bytespider'
-    );
+    $plugin_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$plugin_table}'" ) === $plugin_table;
+    $theme_exists  = $wpdb->get_var( "SHOW TABLES LIKE '{$theme_table}'"  ) === $theme_table;
 
-    $matched_bot = '';
-    foreach ( $ai_bots as $bot ) {
-        if ( stripos($user_agent, $bot) !== false ) {
-            $matched_bot = $bot;
-            break;
+    $breakdown = [];
+
+    // --- プラグインテーブル (post_id で正確に照合) ---
+    if ( $plugin_exists ) {
+        $rows = $wpdb->get_results( $wpdb->prepare(
+            "SELECT ai_service, access_type, COUNT(*) AS cnt
+             FROM {$plugin_table}
+             WHERE post_id = %d
+             GROUP BY ai_service, access_type",
+            $post_id
+        ), ARRAY_A );
+        foreach ( $rows as $row ) {
+            $svc = $row['ai_service'];
+            $typ = $row['access_type'];
+            if ( ! isset( $breakdown[ $svc ] ) ) $breakdown[ $svc ] = [ 'referer' => 0, 'learning' => 0, 'fetch' => 0 ];
+            if ( isset( $breakdown[ $svc ][ $typ ] ) ) $breakdown[ $svc ][ $typ ] += (int) $row['cnt'];
         }
     }
 
-    if ( ! empty($matched_bot) ) {
-        global $wpdb;
-        $table_name = $wpdb->prefix . 'ai_traffic_log';
-        if ( $wpdb->get_var("SHOW TABLES LIKE '{$table_name}'") === $table_name ) {
-            $wpdb->insert(
-                $table_name,
-                array(
-                    'time' => current_time( 'mysql' ),
-                    'bot_identifier' => $matched_bot,
-                    'requested_url' => esc_url_raw( $_SERVER['REQUEST_URI'] ),
-                    'user_agent' => sanitize_textarea_field( $user_agent ),
-                    'ip_address' => sanitize_text_field( $_SERVER['REMOTE_ADDR'] )
-                )
-            );
+    // --- テーマテーブル (URL 照合) ---
+    if ( $theme_exists ) {
+        $permalink_path = str_replace( home_url(), '', get_permalink( $post_id ) );
+        if ( ! empty( $permalink_path ) && $permalink_path !== '/' ) {
+            $like = '%' . $wpdb->esc_like( $permalink_path ) . '%';
+            $bots = $wpdb->get_results( $wpdb->prepare(
+                "SELECT bot_identifier, COUNT(*) AS cnt
+                 FROM {$theme_table}
+                 WHERE requested_url LIKE %s
+                 GROUP BY bot_identifier",
+                $like
+            ), ARRAY_A );
+            $bot_map = awbase_get_bot_map();
+            foreach ( $bots as $bot ) {
+                $bid = $bot['bot_identifier'];
+                $svc = isset( $bot_map[ $bid ] ) ? $bot_map[ $bid ][0] : $bid;
+                $typ = isset( $bot_map[ $bid ] ) ? $bot_map[ $bid ][1] : 'referer';
+                if ( ! isset( $breakdown[ $svc ] ) ) $breakdown[ $svc ] = [ 'referer' => 0, 'learning' => 0, 'fetch' => 0 ];
+                if ( isset( $breakdown[ $svc ][ $typ ] ) ) $breakdown[ $svc ][ $typ ] += (int) $bot['cnt'];
+            }
         }
+    }
+
+    return $breakdown;
+}
+
+// ---------------------------------------------------------------------------
+// 3. Track traffic (テーマ独自テーブルへの書き込み)
+//    プラグインが有効な場合はプラグインに委譲するためスキップ
+// ---------------------------------------------------------------------------
+function awbase_track_ai_bots() {
+    if ( function_exists( 'aitt_table_name' ) ) return; // プラグイン有効時はスキップ
+    $options = get_option( 'awbase_settings', awbase_get_default_settings() );
+    if ( $options['ai_tracking_enable'] !== '1' ) return;
+    if ( is_admin() ) return;
+
+    $user_agent = isset( $_SERVER['HTTP_USER_AGENT'] ) ? $_SERVER['HTTP_USER_AGENT'] : '';
+    if ( empty( $user_agent ) ) return;
+
+    $bot_map = awbase_get_bot_map();
+    $matched_bot = '';
+    foreach ( array_keys( $bot_map ) as $bot ) {
+        if ( stripos( $user_agent, $bot ) !== false ) { $matched_bot = $bot; break; }
+    }
+    if ( empty( $matched_bot ) ) return;
+
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'ai_traffic_log';
+    if ( $wpdb->get_var( "SHOW TABLES LIKE '{$table_name}'" ) === $table_name ) {
+        $wpdb->insert( $table_name, [
+            'time'           => current_time( 'mysql' ),
+            'bot_identifier' => $matched_bot,
+            'requested_url'  => esc_url_raw( $_SERVER['REQUEST_URI'] ),
+            'user_agent'     => sanitize_textarea_field( $user_agent ),
+            'ip_address'     => sanitize_text_field( $_SERVER['REMOTE_ADDR'] ),
+        ] );
     }
 }
 add_action( 'wp', 'awbase_track_ai_bots' );
 
-// 3. Admin Menu for Viewing Logs
+// ---------------------------------------------------------------------------
+// 4. Admin submenu – 常に登録する（プラグイン有効時もページにアクセスできるよう）
+// ---------------------------------------------------------------------------
 function awbase_ai_tracker_menu() {
     add_submenu_page(
         'awbase_settings',
@@ -84,126 +176,264 @@ function awbase_ai_tracker_menu() {
         'awbase_ai_tracker_page'
     );
 }
-add_action( 'admin_menu', 'awbase_ai_tracker_menu' );
+add_action( 'admin_menu', 'awbase_ai_tracker_menu', 1000 );
 
-// 4. Admin Page HTML
+// ---------------------------------------------------------------------------
+// 5. Admin page HTML – 両テーブルを表示
+// ---------------------------------------------------------------------------
 function awbase_ai_tracker_page() {
     global $wpdb;
-    $table_name = $wpdb->prefix . 'ai_traffic_log';
+    $theme_table  = $wpdb->prefix . 'ai_traffic_log';
+    $plugin_table = $wpdb->prefix . 'ai_traffic_logs';
 
-    // Handle Delete
-    if ( isset($_POST['awbase_clear_ai_log']) && check_admin_referer('awbase_clear_ai_log_nonce') ) {
-        $wpdb->query("TRUNCATE TABLE $table_name");
-        echo '<div class="updated"><p>ログをクリアしました。</p></div>';
+    $theme_exists  = $wpdb->get_var( "SHOW TABLES LIKE '{$theme_table}'"  ) === $theme_table;
+    $plugin_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$plugin_table}'" ) === $plugin_table;
+
+    // テーマテーブルのログクリア
+    if ( isset( $_POST['awbase_clear_ai_log'] ) && check_admin_referer( 'awbase_clear_ai_log_nonce' ) ) {
+        if ( $theme_exists ) $wpdb->query( "TRUNCATE TABLE {$theme_table}" );
+        echo '<div class="updated"><p>テーマログをクリアしました。</p></div>';
     }
-
-    $table_exists = $wpdb->get_var("SHOW TABLES LIKE '{$table_name}'") === $table_name;
-    if ( ! $table_exists ) {
-        echo '<div class="wrap"><h1>AIボット トラフィックログ</h1><p>テーブルが存在しません。テーマを切り替え直してテーブルを作成してください。</p></div>';
-        return;
-    }
-
-    // Pagination
-    $per_page = 50;
-    $page = isset( $_GET['paged'] ) ? intval( $_GET['paged'] ) : 1;
-    $offset = ( $page - 1 ) * $per_page;
-
-    $total = $wpdb->get_var("SELECT COUNT(id) FROM $table_name");
-    $logs = $wpdb->get_results("SELECT * FROM $table_name ORDER BY time DESC LIMIT $per_page OFFSET $offset");
-    
-    // Aggregation
-    $stats = $wpdb->get_results("SELECT bot_identifier, COUNT(id) as counts FROM $table_name GROUP BY bot_identifier ORDER BY counts DESC");
-
     ?>
     <div class="wrap">
-        <h1>AIボット トラフィックログ</h1>
-        
-        <h2>ボット別アクセス集計</h2>
-        <table class="wp-list-table widefat fixed striped">
-            <thead><tr><th>Bot Identifier</th><th>アクセス数</th></tr></thead>
+        <h1>AIボット トラフィックログ <span class="aw-logo-mark">AW</span></h1>
+
+        <?php if ( function_exists( 'aitt_table_name' ) ) : ?>
+        <div class="notice notice-info inline" style="margin:12px 0;">
+            <p><strong>AI Traffic Tracker プラグイン が有効です。</strong>
+            プラグインテーブル (<code><?php echo esc_html( $plugin_table ); ?></code>) のデータも合算表示しています。</p>
+        </div>
+        <?php endif; ?>
+
+        <?php
+        // ---- サービス別集計（両テーブル統合） ----
+        $combined = []; // service => ['referer'=>0,'learning'=>0,'fetch'=>0]
+
+        if ( $plugin_exists ) {
+            $rows = $wpdb->get_results(
+                "SELECT ai_service, access_type, COUNT(*) AS cnt
+                 FROM {$plugin_table}
+                 GROUP BY ai_service, access_type",
+                ARRAY_A
+            );
+            foreach ( $rows as $row ) {
+                $s = $row['ai_service']; $t = $row['access_type'];
+                if ( ! isset( $combined[$s] ) ) $combined[$s] = ['referer'=>0,'learning'=>0,'fetch'=>0];
+                if ( isset( $combined[$s][$t] ) ) $combined[$s][$t] += (int)$row['cnt'];
+            }
+        }
+
+        if ( $theme_exists ) {
+            $bot_map = awbase_get_bot_map();
+            $rows = $wpdb->get_results(
+                "SELECT bot_identifier, COUNT(*) AS cnt
+                 FROM {$theme_table}
+                 GROUP BY bot_identifier",
+                ARRAY_A
+            );
+            foreach ( $rows as $row ) {
+                $bid = $row['bot_identifier'];
+                $s = isset( $bot_map[$bid] ) ? $bot_map[$bid][0] : $bid;
+                $t = isset( $bot_map[$bid] ) ? $bot_map[$bid][1] : 'referer';
+                if ( ! isset( $combined[$s] ) ) $combined[$s] = ['referer'=>0,'learning'=>0,'fetch'=>0];
+                if ( isset( $combined[$s][$t] ) ) $combined[$s][$t] += (int)$row['cnt'];
+            }
+        }
+
+        // 合計降順ソート
+        uasort( $combined, function($a, $b) {
+            return array_sum($b) <=> array_sum($a);
+        });
+        ?>
+
+        <h2>サービス別アクセス集計（全期間）</h2>
+        <table class="wp-list-table widefat fixed striped" style="max-width:600px;">
+            <thead>
+                <tr>
+                    <th>Service</th>
+                    <th style="text-align:right;width:80px;">リファラー</th>
+                    <th style="text-align:right;width:80px;">学習</th>
+                    <th style="text-align:right;width:80px;">取得</th>
+                    <th style="text-align:right;width:80px;">合計</th>
+                </tr>
+            </thead>
             <tbody>
-                <?php if($stats): foreach($stats as $stat): ?>
-                    <tr><td><?php echo esc_html($stat->bot_identifier); ?></td><td><?php echo esc_html($stat->counts); ?></td></tr>
-                <?php endforeach; else: ?>
-                    <tr><td colspan="2">データがありません。</td></tr>
+                <?php if ( $combined ) : foreach ( $combined as $service => $types ) :
+                    $total = array_sum($types); ?>
+                    <tr>
+                        <td><strong><?php echo esc_html($service); ?></strong></td>
+                        <td style="text-align:right;"><?php echo intval($types['referer']); ?></td>
+                        <td style="text-align:right;"><?php echo intval($types['learning']); ?></td>
+                        <td style="text-align:right;"><?php echo intval($types['fetch']); ?></td>
+                        <td style="text-align:right;font-weight:700;"><?php echo number_format($total); ?></td>
+                    </tr>
+                <?php endforeach; else : ?>
+                    <tr><td colspan="5" style="text-align:center;">データがありません。</td></tr>
                 <?php endif; ?>
             </tbody>
         </table>
 
-        <h2 style="margin-top: 30px;">アクセスログ一覧 (総件数: <?php echo esc_html($total); ?>件)</h2>
-        <form method="post" style="margin-bottom: 20px;">
-            <?php wp_nonce_field('awbase_clear_ai_log_nonce'); ?>
-            <input type="submit" name="awbase_clear_ai_log" class="button button-danger" style="color:red; border-color:red;" value="すべてのログをクリア" onclick="return confirm('本当にすべてのログを削除しますか？');">
+        <?php if ( $theme_exists ) :
+            $per_page = 50;
+            $page     = isset( $_GET['paged'] ) ? intval( $_GET['paged'] ) : 1;
+            $offset   = ( $page - 1 ) * $per_page;
+            $total    = $wpdb->get_var( "SELECT COUNT(id) FROM {$theme_table}" );
+            $logs     = $wpdb->get_results( "SELECT * FROM {$theme_table} ORDER BY time DESC LIMIT {$per_page} OFFSET {$offset}" );
+        ?>
+        <h2 style="margin-top:30px;">テーマ収集ログ（総件数: <?php echo esc_html($total); ?>件）</h2>
+        <form method="post" style="margin-bottom:16px;">
+            <?php wp_nonce_field( 'awbase_clear_ai_log_nonce' ); ?>
+            <input type="submit" name="awbase_clear_ai_log" class="button" style="color:red;border-color:red;" value="テーマログをクリア" onclick="return confirm('テーマ収集ログをすべて削除しますか？');">
         </form>
-
         <table class="wp-list-table widefat fixed striped">
             <thead>
                 <tr>
-                    <th style="width: 15%;">日時</th>
-                    <th style="width: 15%;">ボット判定</th>
-                    <th style="width: 30%;">リクエストURL</th>
-                    <th style="width: 25%;">ユーザーエージェント</th>
-                    <th style="width: 15%;">IPアドレス</th>
+                    <th style="width:16%;">日時</th>
+                    <th style="width:14%;">ボット</th>
+                    <th style="width:30%;">URL</th>
+                    <th style="width:25%;">UA</th>
+                    <th style="width:15%;">IP</th>
                 </tr>
             </thead>
             <tbody>
-                <?php if($logs): foreach($logs as $log): ?>
+                <?php if ( $logs ) : foreach ( $logs as $log ) : ?>
                     <tr>
                         <td><?php echo esc_html($log->time); ?></td>
                         <td><?php echo esc_html($log->bot_identifier); ?></td>
-                        <td><?php echo esc_html($log->requested_url); ?></td>
-                        <td><?php echo esc_html($log->user_agent); ?></td>
+                        <td style="word-break:break-all;"><?php echo esc_html($log->requested_url); ?></td>
+                        <td style="word-break:break-all;font-size:11px;"><?php echo esc_html($log->user_agent); ?></td>
                         <td><?php echo esc_html($log->ip_address); ?></td>
                     </tr>
-                <?php endforeach; else: ?>
+                <?php endforeach; else : ?>
                     <tr><td colspan="5">データがありません。</td></tr>
                 <?php endif; ?>
             </tbody>
         </table>
-
         <?php
-        $total_pages = ceil($total / $per_page);
-        if ($total_pages > 1) {
-            $current_url = admin_url('admin.php?page=awbase_ai_tracker');
+        $total_pages = ceil( $total / $per_page );
+        if ( $total_pages > 1 ) {
             echo '<div class="tablenav"><div class="tablenav-pages">';
-            echo paginate_links(array(
-                'base' => $current_url . '%_%',
-                'format' => '&paged=%#%',
+            echo paginate_links( [
+                'base'    => admin_url( 'admin.php?page=awbase_ai_tracker' ) . '%_%',
+                'format'  => '&paged=%#%',
                 'current' => $page,
-                'total' => $total_pages
-            ));
+                'total'   => $total_pages,
+            ] );
             echo '</div></div>';
         }
         ?>
+        <?php elseif ( ! $plugin_exists ) : ?>
+        <p style="color:red;margin-top:20px;">テーブルが存在しません。テーマを一度無効にしてから再有効化してください。</p>
+        <?php endif; ?>
+
     </div>
     <?php
 }
 
-// 5. Add Custom Column in Post List to show AI hits for the post
-function awbase_add_ai_hits_column($columns) {
-    $columns['awbase_ai_hits'] = 'AIアクセス';
-    return $columns;
+// ---------------------------------------------------------------------------
+// 6. 投稿一覧 AI カラム
+// ---------------------------------------------------------------------------
+function awbase_add_ai_hits_column( $columns ) {
+    $new = [];
+    foreach ( $columns as $key => $label ) {
+        $new[$key] = $label;
+        if ( $key === 'date' ) $new['awbase_ai_hits'] = 'AI';
+    }
+    return $new;
 }
-add_filter('manage_posts_columns', 'awbase_add_ai_hits_column');
-add_filter('manage_pages_columns', 'awbase_add_ai_hits_column');
+add_filter( 'manage_posts_columns', 'awbase_add_ai_hits_column' );
+add_filter( 'manage_pages_columns', 'awbase_add_ai_hits_column' );
 
-function awbase_show_ai_hits_column($column_name, $post_id) {
-    if ($column_name == 'awbase_ai_hits') {
-        global $wpdb;
-        $table_name = $wpdb->prefix . 'ai_traffic_log';
-        if ( $wpdb->get_var("SHOW TABLES LIKE '{$table_name}'") === $table_name ) {
-            // Very rudimentary matching - just checks if requested_url includes the post slug/path
-            $permalink = str_replace(home_url(), '', get_permalink($post_id));
-            if ($permalink === '/' || empty($permalink)) {
-                echo "-";
-            } else {
-                $count = $wpdb->get_var($wpdb->prepare("SELECT COUNT(id) FROM $table_name WHERE requested_url LIKE %s", '%' . $wpdb->esc_like($permalink) . '%'));
-                echo intval($count) . ' 回';
-            }
-        } else {
-            echo '-';
+// テーマテーブルの期間別カウント（URL照合）
+function awbase_get_ai_count( $permalink_path, $days = 0 ) {
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'ai_traffic_log';
+    if ( $wpdb->get_var( "SHOW TABLES LIKE '{$table_name}'" ) !== $table_name ) return 0;
+    $like = '%' . $wpdb->esc_like( $permalink_path ) . '%';
+    if ( $days > 0 ) {
+        $since = gmdate( 'Y-m-d H:i:s', strtotime( "-{$days} days" ) );
+        return (int) $wpdb->get_var( $wpdb->prepare(
+            "SELECT COUNT(id) FROM {$table_name} WHERE requested_url LIKE %s AND time >= %s",
+            $like, $since
+        ) );
+    }
+    return (int) $wpdb->get_var( $wpdb->prepare(
+        "SELECT COUNT(id) FROM {$table_name} WHERE requested_url LIKE %s", $like
+    ) );
+}
+
+function awbase_show_ai_hits_column( $column_name, $post_id ) {
+    if ( $column_name !== 'awbase_ai_hits' ) return;
+
+    global $wpdb;
+    $plugin_table = $wpdb->prefix . 'ai_traffic_logs';
+    $theme_table  = $wpdb->prefix . 'ai_traffic_log';
+
+    $plugin_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$plugin_table}'" ) === $plugin_table;
+    $theme_exists  = $wpdb->get_var( "SHOW TABLES LIKE '{$theme_table}'"  ) === $theme_table;
+
+    if ( ! $plugin_exists && ! $theme_exists ) { echo '-'; return; }
+
+    // ---- D/W/M/All カウント ----
+    $d = $w = $m = $all = 0;
+
+    if ( $plugin_exists ) {
+        $d   += (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$plugin_table} WHERE post_id=%d AND accessed_at >= %s", $post_id, gmdate('Y-m-d H:i:s', strtotime('-1 day')) ) );
+        $w   += (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$plugin_table} WHERE post_id=%d AND accessed_at >= %s", $post_id, gmdate('Y-m-d H:i:s', strtotime('-7 days')) ) );
+        $m   += (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$plugin_table} WHERE post_id=%d AND accessed_at >= %s", $post_id, gmdate('Y-m-d H:i:s', strtotime('-30 days')) ) );
+        $all += (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$plugin_table} WHERE post_id=%d", $post_id ) );
+    }
+
+    $permalink_path = '';
+    if ( $theme_exists ) {
+        $permalink_path = str_replace( home_url(), '', get_permalink( $post_id ) );
+        if ( ! empty( $permalink_path ) && $permalink_path !== '/' ) {
+            $d   += awbase_get_ai_count( $permalink_path, 1 );
+            $w   += awbase_get_ai_count( $permalink_path, 7 );
+            $m   += awbase_get_ai_count( $permalink_path, 30 );
+            $all += awbase_get_ai_count( $permalink_path, 0 );
         }
     }
+
+    // ---- ツールチップ: Service | Ref | Learn | Fetch テーブル ----
+    $breakdown = awbase_build_service_breakdown( $post_id );
+
+    echo '<div class="awbase-ai-col">';
+    echo '<div class="awbase-ai-counts">';
+    printf( '<div>D: %d</div>',   $d );
+    printf( '<div>W: %d</div>',   $w );
+    printf( '<div>M: %d</div>',   $m );
+    printf( '<div>All: %s</div>', number_format($all) );
+    echo '</div>';
+
+    echo '<span class="awbase-ai-trigger">[Details]';
+    echo '<span class="awbase-ai-tooltip">';
+    echo '<table class="awbase-ai-tip-table">';
+    echo '<thead><tr>';
+    echo '<th>Service</th><th>Ref</th><th>Learn</th><th>Fetch</th>';
+    echo '</tr></thead><tbody>';
+    if ( ! empty( $breakdown ) ) {
+        foreach ( $breakdown as $service => $types ) {
+            printf(
+                '<tr><td>%s</td><td>%d</td><td>%d</td><td>%d</td></tr>',
+                esc_html( $service ),
+                intval( $types['referer'] ),
+                intval( $types['learning'] ),
+                intval( $types['fetch'] )
+            );
+        }
+    } else {
+        echo '<tr><td colspan="4" style="text-align:center;opacity:.6;">No Data</td></tr>';
+    }
+    echo '</tbody></table></span></span>';
+    echo '</div>';
 }
-add_action('manage_posts_custom_column', 'awbase_show_ai_hits_column', 10, 2);
-add_action('manage_pages_custom_column', 'awbase_show_ai_hits_column', 10, 2);
+add_action( 'manage_posts_custom_column', 'awbase_show_ai_hits_column', 10, 2 );
+add_action( 'manage_pages_custom_column', 'awbase_show_ai_hits_column', 10, 2 );
+
+// Sortable
+function awbase_ai_sortable_column( $columns ) {
+    $columns['awbase_ai_hits'] = 'awbase_ai_hits';
+    return $columns;
+}
+add_filter( 'manage_edit-post_sortable_columns', 'awbase_ai_sortable_column' );

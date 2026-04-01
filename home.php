@@ -7,13 +7,13 @@ get_header(); ?>
     <h1 class="archive-title">最新の記事</h1>
 </div>
 
-<div class="entries-list">
+<div class="entry-card-list">
     <?php if ( have_posts() ) : ?>
         <?php while ( have_posts() ) : the_post(); ?>
             <?php get_template_part( 'template-parts/entry-card' ); ?>
         <?php endwhile; ?>
     <?php else : ?>
-        <p>記事が見つかりませんでした。</p>
+        <p class="no-posts">記事が見つかりませんでした。</p>
     <?php endif; ?>
 </div>
 

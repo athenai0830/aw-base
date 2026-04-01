@@ -13,6 +13,33 @@ function awbase_widgets_init() {
         'before_title'  => '<h3 class="widget-title">',
         'after_title'   => '</h3>',
     ) );
+    register_sidebar( array(
+        'name'          => 'サイドバー（追従）',
+        'id'            => 'sidebar-sticky',
+        'description'   => 'スクロールに追従して表示されるサイドバー領域です。',
+        'before_widget' => '<section id="%1$s" class="widget %2$s">',
+        'after_widget'  => '</section>',
+        'before_title'  => '<h3 class="widget-title">',
+        'after_title'   => '</h3>',
+    ) );
+    register_sidebar(array(
+        'name'          => 'フロントページ 上部',
+        'id'            => 'front-page-top',
+        'description'   => 'フロントページのFV直下に表示されます。広告やお知らせバナーに使用できます。',
+        'before_widget' => '<div id="%1$s" class="front-page-widget %2$s">',
+        'after_widget'  => '</div>',
+        'before_title'  => '<h3 class="fp-widget-title">',
+        'after_title'   => '</h3>',
+    ));
+    register_sidebar(array(
+        'name'          => 'フッター下部',
+        'id'            => 'footer-bottom',
+        'description'   => 'フッターの下に表示されます。動画埋め込みやバナーに使用できます。',
+        'before_widget' => '<div id="%1$s" class="footer-bottom-widget %2$s">',
+        'after_widget'  => '</div>',
+        'before_title'  => '',
+        'after_title'   => '',
+    ));
 }
 add_action( 'widgets_init', 'awbase_widgets_init' );
 
@@ -76,3 +103,8 @@ function awbase_register_widgets() {
     register_widget( 'AWBase_Profile_Widget' );
 }
 add_action( 'widgets_init', 'awbase_register_widgets' );
+
+// Calendar: redirect day links to monthly archive
+add_filter( 'get_day_link', function( $daylink, $year, $month, $day ) {
+    return get_month_link( $year, $month );
+}, 10, 4 );

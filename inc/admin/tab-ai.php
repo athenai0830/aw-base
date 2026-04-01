@@ -15,7 +15,11 @@ if ($table_exists) {
     <tr>
         <th>AI ボットトラッキング機能</th>
         <td>
-            <label><input type="checkbox" name="awbase_settings[ai_tracking_enable]" value="1" <?php checked('1', $options['ai_tracking_enable']); ?>> ChatGPTGPTBot などのクローラーを記録・集計する</label>
+            <label class="awbase-toggle">
+                <input type="checkbox" name="awbase_settings[ai_tracking_enable]" value="1" <?php checked('1', $options['ai_tracking_enable']); ?>>
+                <span class="awbase-toggle-slider"></span>
+                <span class="awbase-toggle-label">ChatGPT・GPTBot などのクローラーを記録・集計する</span>
+            </label>
         </td>
     </tr>
     <?php if ( $options['ai_tracking_enable'] == '1' ): ?>

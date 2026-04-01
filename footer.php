@@ -1,11 +1,14 @@
 <?php
 // AW-Base Footer
 if ( ! defined( 'ABSPATH' ) ) exit;
-$options = get_option('awbase_settings', awbase_get_default_settings());
+
+$saved         = get_option( 'awbase_settings', [] );
+$options       = is_array( $saved ) ? array_merge( awbase_get_default_settings(), $saved ) : awbase_get_default_settings();
+$_show_sidebar = awbase_get_layout()['show_sidebar'];
 ?>
         </main><!-- #primary -->
 
-        <?php if ( $options['columns'] !== '1' ) : ?>
+        <?php if ( $_show_sidebar ) : ?>
             <aside id="secondary" class="site-sidebar">
                 <?php get_sidebar(); ?>
             </aside><!-- #secondary -->
@@ -14,7 +17,7 @@ $options = get_option('awbase_settings', awbase_get_default_settings());
     </div><!-- .site-main-wrap -->
 </div><!-- .site-container -->
 
-<footer class="site-footer">
+<footer class="site-footer" itemscope itemtype="https://schema.org/WPFooter">
     <div class="site-container">
         
         <?php if ( ! empty($options['footer_logo_image']) ) : ?>
@@ -29,7 +32,7 @@ $options = get_option('awbase_settings', awbase_get_default_settings());
         <?php endif; ?>
 
         <?php if ( has_nav_menu('footer') ) : ?>
-        <div class="footer-nav" style="text-align: <?php echo esc_attr($options['footer_nav_align']); ?>;">
+        <div class="footer-nav footer-nav-align-<?php echo esc_attr($options['footer_nav_align']); ?>">
             <?php
             wp_nav_menu( array(
                 'theme_location' => 'footer',
@@ -47,7 +50,18 @@ $options = get_option('awbase_settings', awbase_get_default_settings());
     </div>
 </footer>
 
+<?php if ( is_active_sidebar( 'footer-bottom' ) ) : ?>
+<div class="footer-bottom-area">
+    <?php dynamic_sidebar( 'footer-bottom' ); ?>
+</div>
+<?php endif; ?>
+
 </div><!-- #page -->
+
+<button id="pagetop-btn" class="pagetop-btn" aria-label="ページトップへ戻る">
+    <i class="fa-solid fa-angles-up" aria-hidden="true"></i>
+    <span class="pagetop-text">TOP</span>
+</button>
 
 <?php wp_footer(); ?>
 </body>
