@@ -27,10 +27,22 @@ function awbase_get_github_release() {
     }
 
     $body    = json_decode( wp_remote_retrieve_body( $response ), true );
+    // リリースアセットに aw-base.zip があればそちらを優先（フォルダ名が正しい）
+    // なければ GitHub 自動生成の zipball にフォールバック
+    $download_url = $body['zipball_url'] ?? '';
+    if ( ! empty( $body['assets'] ) ) {
+        foreach ( $body['assets'] as $asset ) {
+            if ( ( $asset['name'] ?? '' ) === 'aw-base.zip' && ! empty( $asset['browser_download_url'] ) ) {
+                $download_url = $asset['browser_download_url'];
+                break;
+            }
+        }
+    }
+
     $release = [
         'version'      => ltrim( $body['tag_name'] ?? '', 'v' ),
-        'download_url' => $body['zipball_url'] ?? '',
-        'details_url'  => $body['html_url']    ?? '',
+        'download_url' => $download_url,
+        'details_url'  => $body['html_url'] ?? '',
     ];
 
     set_transient( $cache_key, $release, 12 * HOUR_IN_SECONDS );
