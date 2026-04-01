@@ -69,3 +69,24 @@ function awbase_delete_update_cache() {
     delete_transient( 'awbase_github_release' );
 }
 add_action( 'delete_site_transient_update_themes', 'awbase_delete_update_cache' );
+
+/**
+ * GitHubのzipを展開した際のフォルダ名を正しく "aw-base" に修正する
+ * （GitHub自動生成zipは "athenai0830-aw-base-{hash}" というフォルダ名になるため）
+ */
+function awbase_fix_theme_update_source( $source, $remote_source, $upgrader ) {
+    if ( ! isset( $upgrader->skin->theme ) || $upgrader->skin->theme !== 'aw-base' ) {
+        return $source;
+    }
+
+    $corrected = trailingslashit( $remote_source ) . 'aw-base/';
+
+    if ( $source !== $corrected ) {
+        global $wp_filesystem;
+        $wp_filesystem->move( $source, $corrected );
+        return $corrected;
+    }
+
+    return $source;
+}
+add_filter( 'upgrader_source_selection', 'awbase_fix_theme_update_source', 10, 3 );
