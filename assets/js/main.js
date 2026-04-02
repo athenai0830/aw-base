@@ -141,21 +141,47 @@ document.addEventListener('DOMContentLoaded', function () {
         wrapper.appendChild(table);
     });
 
-    // スクロール可能なテーブルに is-overflowing クラスを付け右端フェードを制御
-    function updateTableOverflow(el) {
+    // スクロール可能なテーブルにヒントテキストを表示・スクロール開始でフェードアウト
+    function setupTableScrollHint(el) {
         var overflows = el.scrollWidth > el.clientWidth + 1;
-        var atEnd     = el.scrollLeft + el.clientWidth >= el.scrollWidth - 2;
-        el.classList.toggle('is-overflowing', overflows && !atEnd);
+        var hint = el.previousElementSibling;
+        var isHint = hint && hint.classList.contains('table-scroll-hint');
+
+        if (overflows) {
+            if (!isHint) {
+                hint = document.createElement('p');
+                hint.className = 'table-scroll-hint';
+                hint.textContent = '横にスライドできます';
+                el.parentNode.insertBefore(hint, el);
+            }
+            hint.classList.remove('is-hidden');
+        } else {
+            if (isHint) { hint.classList.add('is-hidden'); }
+        }
     }
 
     document.querySelectorAll('.table-scroll, .entry-content .wp-block-table').forEach(function (el) {
-        updateTableOverflow(el);
-        el.addEventListener('scroll', function () { updateTableOverflow(el); });
+        el.addEventListener('scroll', function () {
+            if (el.scrollLeft > 10) {
+                var hint = el.previousElementSibling;
+                if (hint && hint.classList.contains('table-scroll-hint')) {
+                    hint.classList.add('is-hidden');
+                }
+            }
+        });
     });
+
+    // CSS レイアウト確定後にヒントを初期化（DOMContentLoaded 直後は scrollWidth が未確定のため rAF×2 で遅延）
+    function initTableScrollHints() {
+        document.querySelectorAll('.table-scroll, .entry-content .wp-block-table').forEach(function (el) {
+            setupTableScrollHint(el);
+        });
+    }
+    requestAnimationFrame(function () { requestAnimationFrame(initTableScrollHints); });
 
     window.addEventListener('resize', function () {
         document.querySelectorAll('.table-scroll, .entry-content .wp-block-table').forEach(function (el) {
-            updateTableOverflow(el);
+            setupTableScrollHint(el);
         });
     });
 

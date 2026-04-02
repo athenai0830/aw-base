@@ -16,6 +16,7 @@
   --content-bg:     #FFFFFF;  /* コンテンツ背景 */
   --text-color:     #333333;  /* 文字ポジティブ */
   --text-neg:       #FFFFFF;  /* 文字ネガティブ */
+  --bg-text-color:  #333333;  /* bg-color背景上のテキスト（暗背景→白・明背景→濃色） */
   --text-muted:     #888888;  /* 補助テキスト（日付・メタ情報） */
   --main-color:     #11114D;  /* アクセント/通知ライン（ナビ背景） */
   --accent-color:   #C30E24;  /* 見出しアクセント/ボタン/バッジ背景 */
@@ -129,13 +130,18 @@ a:hover {
 .breadcrumbs {
   width: 100%;
   font-size: 0.85rem;
-  color: var(--text-muted);
-  margin-top: 32px;       /* ヘッダーから離す */
-  margin-bottom: -16px;   /* 下部のメイン要素（アイキャッチ等）に寄せる */
+  color: var(--bg-text-color);
+  margin-top: 4px;
+  margin-bottom: 0;
+}
+
+/* パンくず直後の site-main-wrap は上パディングを詰める */
+.breadcrumbs + .site-main-wrap {
+  padding-top: 8px;
 }
 
 .breadcrumbs a {
-  color: var(--text-color);
+  color: var(--bg-text-color);
   text-decoration: none;
   transition: opacity 0.2s ease;
 }
@@ -151,7 +157,7 @@ a:hover {
 
 .breadcrumbs .sep {
   margin: 0 8px;
-  color: var(--border-color);
+  color: var(--bg-text-color);
 }
 
 
@@ -2151,7 +2157,8 @@ body.home.layout-1c .site-main-wrap {
   .single-content,
   .single-footer,
   .page-header,
-  .page-content {
+  .page-content,
+  .comments-area {
     padding-left: 20px;
     padding-right: 20px;
   }
@@ -2233,7 +2240,8 @@ body.home.layout-1c .site-main-wrap {
   .single-content,
   .single-footer,
   .page-header,
-  .page-content {
+  .page-content,
+  .comments-area {
     padding-left: 16px;
     padding-right: 16px;
   }
@@ -2401,16 +2409,16 @@ body.home.layout-1c .site-main-wrap {
    -------------------------------------------------------------------------- */
 .breadcrumbs {
   font-size: 12px;
-  color: var(--text-muted);
+  color: var(--bg-text-color);
   padding: 8px 0 16px;
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
   align-items: center;
 }
-.breadcrumbs a { color: var(--text-muted); }
+.breadcrumbs a { color: var(--bg-text-color); }
 .breadcrumbs a:hover { color: var(--accent-color); }
-.breadcrumbs .sep { color: var(--border-color); }
+.breadcrumbs .sep { color: var(--bg-text-color); }
 
 /* --------------------------------------------------------------------------
    FV Substack Button
@@ -3302,8 +3310,7 @@ body.home.layout-1c .site-main-wrap {
    Breadcrumbs – now outside site-main-wrap (full-width)
    ---------------------------------------------------------- */
 .site-container > .breadcrumbs {
-  padding: 12px 0 4px;
-  margin-bottom: 0;
+  padding: 8px 0 4px;
 }
 
 /* ----------------------------------------------------------
@@ -3572,19 +3579,21 @@ body.home.layout-1c .site-main-wrap {
     margin: 0;
   }
 
-  /* 右端フェード – テーブルがはみ出している間だけ表示 */
-  .table-scroll.is-overflowing::after,
-  .entry-content .wp-block-table.is-overflowing::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 48px;
-    height: calc(100% - 6px);
-    background: linear-gradient(to right, transparent, var(--content-bg, #fff));
-    pointer-events: none;
-  }
+}
 
+/* テーブル横スクロールヒント */
+.table-scroll-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-align: right;
+  margin: 8px 0 2px !important;
+  padding: 0;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+.table-scroll-hint.is-hidden {
+  opacity: 0;
+  pointer-events: none;
 }
 
 /* --------------------------------------------------------------------------
@@ -3748,3 +3757,234 @@ body.home.layout-1c .site-main-wrap {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
+
+/* --------------------------------------------------------------------------
+   Comments
+   -------------------------------------------------------------------------- */
+.comments-area {
+  padding: 2rem 40px 40px;
+  border-top: 1px solid var(--border-color, #e5e7eb);
+}
+
+.comments-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  padding-left: 0.75rem;
+  border-left: 4px solid var(--accent-color);
+}
+
+/* コメントリスト */
+.comment-list {
+  list-style: none;
+  margin: 0 0 2rem;
+  padding: 0;
+}
+
+.comment-list .comment-list {
+  margin: 0.75rem 0 0 2rem;
+  padding-left: 1rem;
+  border-left: 2px solid var(--border-color, #e5e7eb);
+}
+
+.comment-item {
+  padding: 1.25rem 0;
+  border-bottom: 1px solid var(--border-color, #e5e7eb);
+}
+
+.comment-item:last-child {
+  border-bottom: none;
+}
+
+.comment-body {
+  display: block;
+}
+
+.comment-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.comment-avatar img {
+  border-radius: 50%;
+  display: block;
+}
+
+.comment-author-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.comment-author-name {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text-color, #333);
+}
+
+.comment-date,
+.comment-date a {
+  font-size: 0.78rem;
+  color: #888;
+  text-decoration: none;
+}
+
+.comment-date a:hover {
+  color: var(--accent-color);
+}
+
+.comment-awaiting-moderation {
+  font-size: 0.82rem;
+  color: #f59e0b;
+  margin-bottom: 0.5rem;
+}
+
+.comment-content {
+  font-size: 0.93rem;
+  line-height: 1.8;
+  color: var(--text-color, #333);
+}
+
+.comment-content p {
+  margin: 0 0 0.75em;
+}
+
+.comment-content p:last-child {
+  margin-bottom: 0;
+}
+
+.comment-reply {
+  margin-top: 0.5rem;
+}
+
+.comment-reply-link {
+  font-size: 0.8rem;
+  color: #888;
+  text-decoration: none;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  padding: 2px 10px;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.comment-reply-link:hover {
+  color: var(--accent-color);
+  border-color: var(--accent-color);
+}
+
+/* コメントフォーム */
+.comment-respond {
+  margin-top: 2rem;
+  background: var(--bg-sub, #f9f9f9);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+#reply-title {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0 0 1.25rem;
+}
+
+#reply-title .small {
+  font-size: 0.8rem;
+  font-weight: 400;
+  margin-left: 0.5rem;
+}
+
+.comment-notes {
+  font-size: 0.82rem;
+  color: #888;
+  margin-bottom: 1rem;
+}
+
+.comment-form-author,
+.comment-form-email,
+.comment-form-comment {
+  margin-bottom: 1rem;
+}
+
+.comment-form-author label,
+.comment-form-email label,
+.comment-form-comment label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+  color: var(--text-color, #333);
+}
+
+.comment-form-author input,
+.comment-form-email input {
+  width: 100%;
+  max-width: 420px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  background: #fff;
+  color: var(--text-color, #333);
+  transition: border-color 0.2s;
+}
+
+.comment-form-author input:focus,
+.comment-form-email input:focus {
+  outline: none;
+  border-color: var(--accent-color);
+}
+
+.comment-form-email-note {
+  display: block;
+  font-size: 0.75rem;
+  color: #aaa;
+  margin-top: 0.25rem;
+}
+
+.comment-form-comment textarea {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 0.92rem;
+  line-height: 1.7;
+  background: #fff;
+  color: var(--text-color, #333);
+  resize: vertical;
+  transition: border-color 0.2s;
+}
+
+.comment-form-comment textarea:focus {
+  outline: none;
+  border-color: var(--accent-color);
+}
+
+.required {
+  color: var(--accent-color);
+  margin-left: 2px;
+}
+
+.comment-submit-btn {
+  display: inline-block;
+  padding: 0.6rem 1.75rem;
+  background: var(--accent-color);
+  color: #fff;
+  font-size: 0.92rem;
+  font-weight: 700;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.comment-submit-btn:hover {
+  opacity: 0.85;
+}
+
+.comments-pagination {
+  margin: 1rem 0;
+  text-align: center;
+}
+

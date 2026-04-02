@@ -153,6 +153,9 @@ if ( $hide_reading_time !== '1' ) {
         <?php get_template_part( 'template-parts/author-box' ); ?>
         <?php get_template_part( 'template-parts/related-posts' ); ?>
         <?php get_template_part( 'template-parts/post-nav' ); ?>
+        <?php if ( comments_open() || get_comments_number() ) : ?>
+            <?php comments_template(); ?>
+        <?php endif; ?>
 
     </article>
 <?php endwhile; ?>

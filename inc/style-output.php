@@ -30,6 +30,7 @@ function awbase_dynamic_css() {
             // 基本背景 #111111 / main-color #6B4C1F / accent #D1A166
             $css_vars['--bg-color']       = '#111111';
             $css_vars['--text-color']     = '#111111'; // ポジティブ (content bg上)
+            $css_vars['--bg-text-color']  = '#FFFFFF'; // bg-color上のテキスト（濃色背景→白）
             $css_vars['--main-color']     = '#6B4C1F'; // 通知ライン/ナビ背景
             $css_vars['--accent-color']   = '#D1A166'; // アクセント/ボタン
             $css_vars['--content-bg']     = '#FFFFFF';
@@ -44,6 +45,7 @@ function awbase_dynamic_css() {
             // 基本背景 #C9B58B / main-color #3F2F0D / accent #3F2F0D
             $css_vars['--bg-color']       = '#C9B58B';
             $css_vars['--text-color']     = '#212121'; // ポジティブ
+            $css_vars['--bg-text-color']  = '#212121'; // bg-color上のテキスト（中間色→濃色）
             $css_vars['--main-color']     = '#3F2F0D'; // 通知ライン/ナビ背景 (accent=main same)
             $css_vars['--accent-color']   = '#3F2F0D'; // アクセント/ボタン
             $css_vars['--content-bg']     = '#FFFFFF';
@@ -58,6 +60,7 @@ function awbase_dynamic_css() {
             // 基本背景 #FFFEF2 / main-color #9E682A / accent #DDC673
             $css_vars['--bg-color']       = '#FFFEF2';
             $css_vars['--text-color']     = '#0A0A0A'; // ポジティブ
+            $css_vars['--bg-text-color']  = '#0A0A0A'; // bg-color上のテキスト（薄色背景→濃色）
             $css_vars['--main-color']     = '#9E682A'; // 通知ライン/ナビ背景
             $css_vars['--accent-color']   = '#DDC673'; // アクセント/ボタン
             $css_vars['--content-bg']     = '#FFFFFF';
@@ -72,6 +75,7 @@ function awbase_dynamic_css() {
             // 基本背景 #37474F / main-color #81D4FA / accent #0288D1
             $css_vars['--bg-color']       = '#37474F';
             $css_vars['--text-color']     = '#050505'; // ポジティブ (content bg上)
+            $css_vars['--bg-text-color']  = '#FFFFFF'; // bg-color上のテキスト（濃色背景→白）
             $css_vars['--main-color']     = '#81D4FA'; // 通知ライン/ナビ背景 (明るい水色)
             $css_vars['--accent-color']   = '#0288D1'; // アクセント/ボタン
             $css_vars['--content-bg']     = '#FFFFFF';
@@ -86,6 +90,7 @@ function awbase_dynamic_css() {
             // 基本背景 #FCFCFC / main-color #666666 / accent #636363
             $css_vars['--bg-color']       = '#FCFCFC';
             $css_vars['--text-color']     = '#333333'; // ポジティブ
+            $css_vars['--bg-text-color']  = '#333333'; // bg-color上のテキスト（薄色背景→濃色）
             $css_vars['--main-color']     = '#666666'; // 通知ライン/ナビ背景
             $css_vars['--accent-color']   = '#636363'; // アクセント/ボタン
             $css_vars['--content-bg']     = '#FFFFFF';
@@ -101,6 +106,7 @@ function awbase_dynamic_css() {
             // 基本背景 #FCFCFC / main-color #11114D / accent #C30E24
             $css_vars['--bg-color']       = '#FCFCFC';
             $css_vars['--text-color']     = '#333333'; // ポジティブ
+            $css_vars['--bg-text-color']  = '#333333'; // bg-color上のテキスト（薄色背景→濃色）
             $css_vars['--main-color']     = '#11114D'; // 通知ライン/ナビ背景
             $css_vars['--accent-color']   = '#C30E24'; // アクセント/ボタン
             $css_vars['--content-bg']     = '#FFFFFF';

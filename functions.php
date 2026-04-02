@@ -2,6 +2,46 @@
 // AW-Base Theme Functions
 if ( ! defined( 'ABSPATH' ) ) exit;
 
+// コメント表示コールバック
+function awbase_comment_callback( $comment, $args, $depth ) {
+    $tag = ( $args['style'] === 'div' ) ? 'div' : 'li';
+    ?>
+    <<?php echo $tag; ?> id="comment-<?php comment_ID(); ?>" <?php comment_class( 'comment-item', $comment ); ?>>
+        <article class="comment-body">
+            <div class="comment-meta">
+                <div class="comment-avatar">
+                    <?php echo get_avatar( $comment, 48 ); ?>
+                </div>
+                <div class="comment-author-info">
+                    <span class="comment-author-name"><?php comment_author(); ?></span>
+                    <span class="comment-date">
+                        <a href="<?php echo esc_url( get_comment_link( $comment ) ); ?>">
+                            <?php echo esc_html( get_comment_date() ); ?>
+                        </a>
+                    </span>
+                </div>
+            </div>
+            <?php if ( '0' === $comment->comment_approved ) : ?>
+                <p class="comment-awaiting-moderation">コメントは承認待ちです。</p>
+            <?php endif; ?>
+            <div class="comment-content">
+                <?php comment_text(); ?>
+            </div>
+            <div class="comment-reply">
+                <?php
+                comment_reply_link( array_merge( $args, array(
+                    'add_below' => 'comment',
+                    'depth'     => $depth,
+                    'max_depth' => $args['max_depth'],
+                    'before'    => '',
+                    'after'     => '',
+                ) ) );
+                ?>
+            </div>
+        </article>
+    <?php
+}
+
 // 1. Theme Setup
 function awbase_setup() {
     add_theme_support( 'title-tag' );
