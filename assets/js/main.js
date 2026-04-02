@@ -47,6 +47,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (nodeName === 'h2') {
                     tocList.appendChild(li);
                     currentH2List = document.createElement('ul');
+                    currentH2List.className = 'toc-list';
                     li.appendChild(currentH2List);
                 } else if (nodeName === 'h3') {
                     (currentH2List || tocList).appendChild(li);

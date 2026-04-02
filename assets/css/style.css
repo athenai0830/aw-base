@@ -936,6 +936,28 @@ body.home.layout-1c .site-main-wrap {
   line-height: 1.85;
 }
 
+/* Lists */
+.entry-content ul:not(.toc-list),
+.entry-content ol:not(.toc-list) {
+  margin: 0 0 1.4em 1.5em;
+  padding: 0;
+  line-height: 1.85;
+}
+.entry-content ul:not(.toc-list) {
+  list-style-type: disc;
+}
+.entry-content ol:not(.toc-list) {
+  list-style-type: decimal;
+}
+.entry-content li:not(.toc-item) {
+  margin-bottom: 0.4em;
+}
+.entry-content li:not(.toc-item) > ul,
+.entry-content li:not(.toc-item) > ol {
+  margin-top: 0.4em;
+  margin-bottom: 0;
+}
+
 /* Images */
 .entry-content img {
   max-width: 100%;
