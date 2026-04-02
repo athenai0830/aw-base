@@ -76,11 +76,14 @@ add_filter( 'pre_set_site_transient_update_themes', 'awbase_check_theme_update' 
 
 /**
  * 手動更新チェック時（「今すぐ確認」ボタン）にキャッシュをクリア
+ * - delete_site_transient_update_themes: WordPress が update_themes トランジェントを削除したとき
+ * - load-update-core.php: 更新ページを開くたびにクリア（フックが発火しない環境への対策）
  */
 function awbase_delete_update_cache() {
     delete_transient( 'awbase_github_release' );
 }
 add_action( 'delete_site_transient_update_themes', 'awbase_delete_update_cache' );
+add_action( 'load-update-core.php', 'awbase_delete_update_cache' );
 
 /**
  * GitHubのzipを展開した際のフォルダ名を正しく "aw-base" に修正する
