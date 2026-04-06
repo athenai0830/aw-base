@@ -2634,6 +2634,10 @@ body.home.layout-1c .site-main-wrap {
   margin: 2em 0;
   box-shadow: 0 1px 4px rgba(0,0,0,0.06);
 }
+.awb-shortcode-section.awb-new-list-block {
+  margin-top: 0;
+  padding: 0;
+}
 
 .awb-section-header {
   display: flex;
