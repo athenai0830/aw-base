@@ -178,6 +178,41 @@ function awbase_ai_tracker_menu() {
 }
 add_action( 'admin_menu', 'awbase_ai_tracker_menu', 1000 );
 
+// CSV ダウンロード（admin_init で早期処理）
+function awbase_ai_tracker_csv_download() {
+    if (
+        ! isset( $_GET['page'], $_GET['action'] ) ||
+        $_GET['page'] !== 'awbase_ai_tracker' ||
+        $_GET['action'] !== 'download_csv'
+    ) return;
+    if ( ! current_user_can( 'manage_options' ) ) wp_die( 'Unauthorized' );
+    check_admin_referer( 'awbase_download_csv' );
+
+    global $wpdb;
+    $theme_table = $wpdb->prefix . 'ai_traffic_log';
+    $table_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$theme_table}'" ) === $theme_table;
+    if ( ! $table_exists ) wp_die( 'テーブルが存在しません。' );
+
+    $logs_all = $wpdb->get_results(
+        "SELECT time, bot_identifier, requested_url, user_agent, ip_address FROM {$theme_table} ORDER BY time DESC",
+        ARRAY_A
+    );
+
+    header( 'Content-Type: text/csv; charset=UTF-8' );
+    header( 'Content-Disposition: attachment; filename="ai-traffic-log.csv"' );
+    header( 'Pragma: no-cache' );
+    header( 'Expires: 0' );
+    echo "\xEF\xBB\xBF";
+    echo implode( ',', [ '日時', 'ボット', 'URL', 'UA', 'IP' ] ) . "\n";
+    foreach ( $logs_all as $row ) {
+        echo implode( ',', array_map( function( $v ) {
+            return '"' . str_replace( '"', '""', $v ) . '"';
+        }, $row ) ) . "\n";
+    }
+    exit;
+}
+add_action( 'admin_init', 'awbase_ai_tracker_csv_download' );
+
 // ---------------------------------------------------------------------------
 // 5. Admin page HTML – 両テーブルを表示
 // ---------------------------------------------------------------------------
@@ -247,7 +282,8 @@ function awbase_ai_tracker_page() {
         ?>
 
         <h2>サービス別アクセス集計（全期間）</h2>
-        <table class="wp-list-table widefat fixed striped" style="max-width:600px;">
+        <div style="display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap;">
+        <table class="wp-list-table widefat fixed striped" style="max-width:560px;flex-shrink:0;">
             <thead>
                 <tr>
                     <th>Service</th>
@@ -272,6 +308,27 @@ function awbase_ai_tracker_page() {
                 <?php endif; ?>
             </tbody>
         </table>
+        <?php if ( $combined ) :
+            $max_total = max( array_map( 'array_sum', $combined ) );
+        ?>
+        <div style="min-width:240px;padding-top:4px;">
+            <?php foreach ( $combined as $service => $types ) :
+                $total = array_sum( $types );
+                $pct   = $max_total > 0 ? round( $total / $max_total * 100 ) : 0;
+            ?>
+            <div style="margin-bottom:10px;">
+                <div style="font-size:12px;margin-bottom:3px;display:flex;justify-content:space-between;">
+                    <span><?php echo esc_html( $service ); ?></span>
+                    <span style="font-weight:700;margin-left:8px;"><?php echo number_format( $total ); ?></span>
+                </div>
+                <div style="background:#e0e0e0;border-radius:3px;height:14px;width:240px;">
+                    <div style="background:#0073aa;width:<?php echo $pct; ?>%;height:100%;border-radius:3px;"></div>
+                </div>
+            </div>
+            <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
+        </div>
 
         <?php if ( $theme_exists ) :
             $per_page = 50;
@@ -281,10 +338,13 @@ function awbase_ai_tracker_page() {
             $logs     = $wpdb->get_results( "SELECT * FROM {$theme_table} ORDER BY time DESC LIMIT {$per_page} OFFSET {$offset}" );
         ?>
         <h2 style="margin-top:30px;">テーマ収集ログ（総件数: <?php echo esc_html($total); ?>件）</h2>
-        <form method="post" style="margin-bottom:16px;">
-            <?php wp_nonce_field( 'awbase_clear_ai_log_nonce' ); ?>
-            <input type="submit" name="awbase_clear_ai_log" class="button" style="color:red;border-color:red;" value="テーマログをクリア" onclick="return confirm('テーマ収集ログをすべて削除しますか？');">
-        </form>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+            <a href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin.php?page=awbase_ai_tracker&action=download_csv' ), 'awbase_download_csv' ) ); ?>" class="button button-secondary">CSVダウンロード</a>
+            <form method="post" style="margin:0;">
+                <?php wp_nonce_field( 'awbase_clear_ai_log_nonce' ); ?>
+                <input type="submit" name="awbase_clear_ai_log" class="button" style="color:red;border-color:red;" value="テーマログをクリア" onclick="return confirm('テーマ収集ログをすべて削除しますか？');">
+            </form>
+        </div>
         <table class="wp-list-table widefat fixed striped">
             <thead>
                 <tr>

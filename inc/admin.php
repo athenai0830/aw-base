@@ -127,6 +127,9 @@ function awbase_get_default_settings() {
         'sns_share_above_author'   => '1',
         'sns_share_below_eyecatch' => '1',
 
+        // Favicon
+        'favicon_url' => '',
+
         // Blog Card
         'blogcard_noimage_url' => '',
 
@@ -198,7 +201,7 @@ function awbase_sanitize_settings( $input ) {
          'popular_list_period',
          'schema_author_name', 'schema_author_altname', 'schema_author_url',
          'schema_org_name', 'schema_org_address', 'schema_org_phone', 'schema_org_email',
-         'schema_og_image', 'blogcard_noimage_url'],
+         'schema_og_image', 'blogcard_noimage_url', 'favicon_url'],
         $all_checkbox_keys
     );
 

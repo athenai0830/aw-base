@@ -137,6 +137,13 @@ if ( ! defined( 'ABSPATH' ) ) exit;
         </td>
     </tr>
     <tr>
+        <th>ファビコン</th>
+        <td>
+            <input type="url" name="awbase_settings[favicon_url]" value="<?php echo esc_attr( $options['favicon_url'] ?? '' ); ?>" class="regular-text" placeholder="https://example.com/favicon.png">
+            <p class="description">ブラウザタブやブックマークに表示されるアイコンのURLを指定してください。<br><strong>推奨サイズ: 32×32px または 180×180px（PNG）</strong></p>
+        </td>
+    </tr>
+    <tr>
         <th>人気記事ランキング設定</th>
         <td>
             <p class="awbase-field-row">表示件数: <input type="number" name="awbase_settings[popular_list_count]" value="<?php echo esc_attr($options['popular_list_count'] ?? 5); ?>" class="small-text" min="1" max="20"> 件</p>

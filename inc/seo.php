@@ -118,6 +118,17 @@ add_action( 'create_category', 'awbase_save_taxonomy_custom_meta', 10, 2 );
 add_action( 'edited_post_tag', 'awbase_save_taxonomy_custom_meta', 10, 2 );  
 add_action( 'create_post_tag', 'awbase_save_taxonomy_custom_meta', 10, 2 );
 
+// 2.5 Output favicon in wp_head
+function awbase_output_favicon() {
+    $options     = get_option( 'awbase_settings', [] );
+    $favicon_url = $options['favicon_url'] ?? '';
+    if ( empty( $favicon_url ) ) return;
+    $url = esc_url( $favicon_url );
+    echo '<link rel="icon" href="' . $url . '">' . "\n";
+    echo '<link rel="apple-touch-icon" href="' . $url . '">' . "\n";
+}
+add_action( 'wp_head', 'awbase_output_favicon', 1 );
+
 // 3. Output Meta tags in wp_head
 function awbase_output_seo_meta_tags() {
     $options = get_option('awbase_settings', awbase_get_default_settings());
