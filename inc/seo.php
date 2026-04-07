@@ -194,12 +194,21 @@ function awbase_output_seo_meta_tags() {
     $site_name = get_bloginfo('name');
     $og_image  = '';
 
-    if ( is_singular() && has_post_thumbnail( $post_id ) ) {
-        $img = wp_get_attachment_image_src( get_post_thumbnail_id( $post_id ), 'full' );
-        if ( $img ) $og_image = $img[0];
+    if ( is_singular() ) {
+        $og_post_id = get_queried_object_id();
+        if ( $og_post_id && has_post_thumbnail( $og_post_id ) ) {
+            $img = wp_get_attachment_image_src( get_post_thumbnail_id( $og_post_id ), 'full' );
+            if ( $img ) $og_image = $img[0];
+        }
     }
     if ( empty($og_image) ) {
-        $og_image = ! empty( $options['schema_og_image'] ) ? $options['schema_og_image'] : ( ! empty( $options['logo_image'] ) ? $options['logo_image'] : '' );
+        if ( ( is_front_page() || is_home() ) && ! empty( $options['fv_bg_image'] ) ) {
+            $og_image = $options['fv_bg_image'];
+        } elseif ( ! empty( $options['schema_og_image'] ) ) {
+            $og_image = $options['schema_og_image'];
+        } elseif ( ! empty( $options['logo_image'] ) ) {
+            $og_image = $options['logo_image'];
+        }
     }
 
     echo '<meta property="og:title" content="' . esc_attr( $title ? $title : $site_name ) . '">' . "\n";
