@@ -354,12 +354,12 @@ function awbase_ai_tracker_page() {
         }
         ?>
         <h2 style="margin-top:28px;">AI向けファイル アクセス集計（全期間）</h2>
-        <table class="wp-list-table widefat fixed striped" style="max-width:600px;">
+        <table class="wp-list-table widefat fixed striped" style="max-width:560px;">
             <thead>
                 <tr>
                     <th>Service</th>
                     <?php foreach ( $file_keys as $flabel ) : ?>
-                    <th style="text-align:right;width:100px;"><code><?php echo esc_html( $flabel ); ?></code></th>
+                    <th style="text-align:right;width:80px;white-space:nowrap;"><code><?php echo esc_html( $flabel ); ?></code></th>
                     <?php endforeach; ?>
                     <th style="text-align:right;width:80px;">合計</th>
                 </tr>
