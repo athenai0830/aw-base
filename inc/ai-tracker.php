@@ -347,33 +347,43 @@ function awbase_ai_tracker_page() {
                 }
             }
         }
-        // 左テーブルと同じ順序（合計降順）に揃える
-        $ordered_services = array_keys( $combined ); // 左テーブルで既に降順ソート済み
+        // 左テーブルと同じ順序（合計降順）に揃える。ファイルにアクセスしたサービスのみ表示
+        $ordered_services = [];
+        foreach ( array_keys( $combined ) as $svc ) {
+            if ( isset( $file_services[ $svc ] ) ) $ordered_services[] = $svc;
+        }
         foreach ( array_keys( $file_services ) as $svc ) {
             if ( ! in_array( $svc, $ordered_services, true ) ) $ordered_services[] = $svc;
         }
-        $ordered_services = array_filter( $ordered_services, fn($s) => isset( $file_services[$s] ) );
+        $col_count = count( $file_keys ) + 2; // Service + ファイル列 + 合計
         ?>
         <div style="padding-top:4px;">
-            <table class="wp-list-table widefat fixed striped" style="min-width:320px;">
+            <table class="wp-list-table widefat fixed striped" style="min-width:360px;">
                 <thead>
                     <tr>
                         <th>Service</th>
                         <?php foreach ( $file_keys as $flabel ) : ?>
                         <th style="text-align:right;white-space:nowrap;"><code><?php echo esc_html( $flabel ); ?></code></th>
                         <?php endforeach; ?>
+                        <th style="text-align:right;width:60px;">合計</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php if ( $ordered_services ) : foreach ( $ordered_services as $svc ) : ?>
+                    <?php if ( $ordered_services ) : foreach ( $ordered_services as $svc ) :
+                        $row_total = 0;
+                        foreach ( array_keys( $file_keys ) as $fkey ) {
+                            $row_total += isset( $file_counts[ $fkey ][ $svc ] ) ? (int) $file_counts[ $fkey ][ $svc ] : 0;
+                        }
+                    ?>
                     <tr>
                         <td><strong><?php echo esc_html( $svc ); ?></strong></td>
                         <?php foreach ( array_keys( $file_keys ) as $fkey ) : ?>
                         <td style="text-align:right;"><?php echo number_format( isset( $file_counts[ $fkey ][ $svc ] ) ? (int) $file_counts[ $fkey ][ $svc ] : 0 ); ?></td>
                         <?php endforeach; ?>
+                        <td style="text-align:right;font-weight:700;"><?php echo number_format( $row_total ); ?></td>
                     </tr>
                     <?php endforeach; else : ?>
-                    <tr><td colspan="<?php echo count( $file_keys ) + 1; ?>" style="text-align:center;">データがありません。</td></tr>
+                    <tr><td colspan="<?php echo $col_count; ?>" style="text-align:center;">データがありません。</td></tr>
                     <?php endif; ?>
                 </tbody>
             </table>

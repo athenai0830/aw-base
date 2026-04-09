@@ -102,7 +102,11 @@ function awbase_generate_ai_index_content() {
     $site_desc = get_bloginfo( 'description' );
     $site_url  = home_url( '/' );
 
+    $llms_full_url = home_url( '/llms-full.txt' );
+
     $out  = "# サイトタイトル: {$site_name}\n\n";
+    $out .= "> Full content available at: {$llms_full_url}\n";
+    $out .= "> For complete article text, fetch the above URL directly.\n\n";
     $out .= "## TOP\n\n";
     $out .= "### {$site_name}\n";
     $out .= "- Source URL (primary reference): {$site_url}\n";

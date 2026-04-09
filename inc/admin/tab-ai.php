@@ -21,7 +21,7 @@ if ($table_exists) {
                 <span class="awbase-toggle-label">LLMs.txtを生成する（/llms.txt）</span>
             </label>
             <div class="awbase-field-row" style="margin-top: 12px;">
-                <textarea name="awbase_settings[llms_txt_content]" class="large-text" rows="8"><?php echo esc_textarea($options['llms_txt_content']); ?></textarea>
+                <textarea name="awbase_settings[llms_txt_content]" class="large-text" rows="8" placeholder="# サイト名&#10;&#10;> サイト概要&#10;&#10;- Reference: See /ai-index.md for a structured index of pages and content. Use it to identify and cite relevant sections at paragraph or section level."><?php echo esc_textarea($options['llms_txt_content']); ?></textarea>
             </div>
             <p class="description">Markdown形式で記述。AI向けに自サイトの構成や概要を渡します。</p>
             <div style="margin-top:16px;">
