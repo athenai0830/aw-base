@@ -347,15 +347,11 @@ function awbase_ai_tracker_page() {
                 }
             }
         }
-        // 左テーブルと同じ順序（合計降順）に揃える。ファイルにアクセスしたサービスのみ表示
-        $ordered_services = [];
-        foreach ( array_keys( $combined ) as $svc ) {
-            if ( isset( $file_services[ $svc ] ) ) $ordered_services[] = $svc;
-        }
+        // 左テーブルと同じ順序（合計降順）で全サービスを表示。ファイル未アクセスは 0
+        $ordered_services = array_keys( $combined );
         foreach ( array_keys( $file_services ) as $svc ) {
             if ( ! in_array( $svc, $ordered_services, true ) ) $ordered_services[] = $svc;
         }
-        $col_count = count( $file_keys ) + 2; // Service + ファイル列 + 合計
         ?>
         <div style="padding-top:4px;flex-shrink:0;">
             <table class="wp-list-table fixed striped" style="width:auto;white-space:nowrap;">
@@ -369,7 +365,7 @@ function awbase_ai_tracker_page() {
                     </tr>
                 </thead>
                 <tbody>
-                    <?php if ( $ordered_services ) : foreach ( $ordered_services as $svc ) :
+                    <?php foreach ( $ordered_services as $svc ) :
                         $row_total = 0;
                         foreach ( array_keys( $file_keys ) as $fkey ) {
                             $row_total += isset( $file_counts[ $fkey ][ $svc ] ) ? (int) $file_counts[ $fkey ][ $svc ] : 0;
@@ -382,9 +378,7 @@ function awbase_ai_tracker_page() {
                         <?php endforeach; ?>
                         <td style="text-align:right;font-weight:700;"><?php echo number_format( $row_total ); ?></td>
                     </tr>
-                    <?php endforeach; else : ?>
-                    <tr><td colspan="<?php echo $col_count; ?>" style="text-align:center;">データがありません。</td></tr>
-                    <?php endif; ?>
+                    <?php endforeach; ?>
                 </tbody>
             </table>
         </div>
