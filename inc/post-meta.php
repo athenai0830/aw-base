@@ -35,6 +35,17 @@ function awbase_add_post_meta_boxes() {
             'default'
         );
     }
+    // ai-index.md meta box (posts + pages) — citation の下に配置
+    foreach ( $screens as $screen ) {
+        add_meta_box(
+            'awbase_ai_index',
+            'AW-Base ai-index.md 掲載設定',
+            'awbase_ai_index_html',
+            $screen,
+            'normal',
+            'low'
+        );
+    }
 }
 add_action( 'add_meta_boxes', 'awbase_add_post_meta_boxes' );
 
@@ -52,11 +63,6 @@ function awbase_post_options_html( $post ) {
     $hide_title         = get_post_meta( $post->ID, 'awbase_hide_title', true );
     $hide_reading_time  = get_post_meta( $post->ID, 'awbase_hide_reading_time', true );
     $layout             = get_post_meta( $post->ID, 'awbase_layout', true );
-    $ai_index_enable      = get_post_meta( $post->ID, 'awbase_ai_index_enable', true );
-    $ai_index_key_concept = get_post_meta( $post->ID, 'awbase_ai_index_key_concept', true );
-    $ai_index_definition  = get_post_meta( $post->ID, 'awbase_ai_index_definition', true );
-    $ai_index_cite_when   = get_post_meta( $post->ID, 'awbase_ai_index_cite_when', true );
-    $ai_index_orig_term   = get_post_meta( $post->ID, 'awbase_ai_index_original_term', true );
     ?>
     <table class="form-table">
         <tr>
@@ -105,46 +111,6 @@ function awbase_post_options_html( $post ) {
             <th>SEOインデックス設定</th>
             <td>
                 <label><input type="checkbox" name="awbase_noindex" value="1" <?php checked('1', $noindex); ?>> 検索エンジンにインデックスさせない (noindex)</label>
-            </td>
-        </tr>
-        <tr>
-            <th colspan="2" style="padding-top:1.5em;color:#333;border-top:1px solid #eee;">
-                ai-index.md 掲載設定
-            </th>
-        </tr>
-        <tr>
-            <th>ai-index に掲載</th>
-            <td>
-                <label><input type="checkbox" name="awbase_ai_index_enable" value="1" <?php checked('1', $ai_index_enable); ?>> ai-index.md に掲載する</label>
-                <p class="description">有効にすると /ai-index.md に自動出力されます（SEO設定でai-index.md生成が有効な場合）。</p>
-            </td>
-        </tr>
-        <tr>
-            <th><label for="awbase_ai_index_key_concept">Key concept</label></th>
-            <td>
-                <input type="text" id="awbase_ai_index_key_concept" name="awbase_ai_index_key_concept" value="<?php echo esc_attr( $ai_index_key_concept ); ?>" class="large-text" placeholder="例: H = P - I">
-                <p class="description">AIが文脈を判断するキーとなるコンセプト・数式・キャッチを短く。</p>
-            </td>
-        </tr>
-        <tr>
-            <th><label for="awbase_ai_index_definition">Definition</label></th>
-            <td>
-                <textarea id="awbase_ai_index_definition" name="awbase_ai_index_definition" rows="3" class="large-text"><?php echo esc_textarea( $ai_index_definition ); ?></textarea>
-                <p class="description">記事・概念の定義を1〜3文で。</p>
-            </td>
-        </tr>
-        <tr>
-            <th><label for="awbase_ai_index_cite_when">Cite when</label></th>
-            <td>
-                <textarea id="awbase_ai_index_cite_when" name="awbase_ai_index_cite_when" rows="3" class="large-text"><?php echo esc_textarea( $ai_index_cite_when ); ?></textarea>
-                <p class="description">1行1項目。AIがこの記事を引用すべき状況・キーワードを記述。</p>
-            </td>
-        </tr>
-        <tr>
-            <th><label for="awbase_ai_index_original_term">Original term</label></th>
-            <td>
-                <input type="text" id="awbase_ai_index_original_term" name="awbase_ai_index_original_term" value="<?php echo esc_attr( $ai_index_orig_term ); ?>" class="large-text" placeholder="例: デジタルコミュニケーションの臨界モデル">
-                <p class="description">記事タイトルまたは固有名称（日本語可）。</p>
             </td>
         </tr>
     </table>
@@ -210,23 +176,15 @@ function awbase_save_post_meta( $post_id ) {
     if ( ! current_user_can( 'edit_post', $post_id ) ) return;
 
     // Text fields
-    $text_fields = ['awbase_seo_title', 'awbase_seo_desc', 'awbase_layout', 'awbase_ai_index_key_concept', 'awbase_ai_index_original_term'];
+    $text_fields = ['awbase_seo_title', 'awbase_seo_desc', 'awbase_layout'];
     foreach ( $text_fields as $field ) {
         if ( isset( $_POST[$field] ) ) {
             update_post_meta( $post_id, $field, sanitize_text_field( $_POST[$field] ) );
         }
     }
 
-    // Textarea fields
-    $textarea_fields = ['awbase_ai_index_definition', 'awbase_ai_index_cite_when'];
-    foreach ( $textarea_fields as $field ) {
-        if ( isset( $_POST[$field] ) ) {
-            update_post_meta( $post_id, $field, sanitize_textarea_field( $_POST[$field] ) );
-        }
-    }
-
     // Checkbox fields
-    $checkbox_fields = ['awbase_noindex', 'awbase_hide_eyecatch', 'awbase_hide_toc', 'awbase_hide_title', 'awbase_hide_reading_time', 'awbase_ai_index_enable'];
+    $checkbox_fields = ['awbase_noindex', 'awbase_hide_eyecatch', 'awbase_hide_toc', 'awbase_hide_title', 'awbase_hide_reading_time'];
     foreach ( $checkbox_fields as $field ) {
         update_post_meta( $post_id, $field, isset( $_POST[$field] ) ? '1' : '0' );
     }
@@ -299,6 +257,56 @@ function awbase_output_review_schema() {
 }
 add_action( 'wp_head', 'awbase_output_review_schema' );
 
+// ai-index.md Meta Box HTML
+function awbase_ai_index_html( $post ) {
+    wp_nonce_field( 'awbase_save_ai_index', 'awbase_ai_index_nonce' );
+
+    $enable      = get_post_meta( $post->ID, 'awbase_ai_index_enable', true );
+    $key_concept = get_post_meta( $post->ID, 'awbase_ai_index_key_concept', true );
+    $definition  = get_post_meta( $post->ID, 'awbase_ai_index_definition', true );
+    $cite_when   = get_post_meta( $post->ID, 'awbase_ai_index_cite_when', true );
+    $orig_term   = get_post_meta( $post->ID, 'awbase_ai_index_original_term', true );
+    ?>
+    <table class="form-table">
+        <tr>
+            <th>ai-index に掲載</th>
+            <td>
+                <label><input type="checkbox" name="awbase_ai_index_enable" value="1" <?php checked('1', $enable); ?>> ai-index.md に掲載する</label>
+                <p class="description">有効にすると <code>/ai-index.md</code> に自動出力されます（AIタブで生成が有効な場合）。</p>
+            </td>
+        </tr>
+        <tr>
+            <th><label for="awbase_ai_index_key_concept">Key concept</label></th>
+            <td>
+                <input type="text" id="awbase_ai_index_key_concept" name="awbase_ai_index_key_concept" value="<?php echo esc_attr( $key_concept ); ?>" class="large-text" placeholder="例: H = P - I">
+                <p class="description">AIが文脈を判断するキーとなるコンセプト・数式・キャッチを短く。</p>
+            </td>
+        </tr>
+        <tr>
+            <th><label for="awbase_ai_index_definition">Definition</label></th>
+            <td>
+                <textarea id="awbase_ai_index_definition" name="awbase_ai_index_definition" rows="3" class="large-text"><?php echo esc_textarea( $definition ); ?></textarea>
+                <p class="description">記事・概念の定義を1〜3文で。</p>
+            </td>
+        </tr>
+        <tr>
+            <th><label for="awbase_ai_index_cite_when">Cite when</label></th>
+            <td>
+                <textarea id="awbase_ai_index_cite_when" name="awbase_ai_index_cite_when" rows="3" class="large-text"><?php echo esc_textarea( $cite_when ); ?></textarea>
+                <p class="description">1行1項目。AIがこの記事を引用すべき状況・キーワードを記述。</p>
+            </td>
+        </tr>
+        <tr>
+            <th><label for="awbase_ai_index_original_term">Original term</label></th>
+            <td>
+                <input type="text" id="awbase_ai_index_original_term" name="awbase_ai_index_original_term" value="<?php echo esc_attr( $orig_term ); ?>" class="large-text" placeholder="例: デジタルコミュニケーションの臨界モデル">
+                <p class="description">記事タイトルまたは固有名称（日本語可）。</p>
+            </td>
+        </tr>
+    </table>
+    <?php
+}
+
 // Citation Schema Meta Box HTML
 function awbase_citation_schema_html( $post ) {
     wp_nonce_field( 'awbase_save_citation_schema', 'awbase_citation_schema_nonce' );
@@ -356,6 +364,25 @@ function awbase_citation_schema_html( $post ) {
         </tr>
     </table>
     <?php
+}
+
+// Save ai-index Meta Box
+add_action( 'save_post', 'awbase_save_ai_index' );
+function awbase_save_ai_index( $post_id ) {
+    if ( ! isset( $_POST['awbase_ai_index_nonce'] ) ) return;
+    if ( ! wp_verify_nonce( $_POST['awbase_ai_index_nonce'], 'awbase_save_ai_index' ) ) return;
+    if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) return;
+    if ( ! current_user_can( 'edit_post', $post_id ) ) return;
+
+    update_post_meta( $post_id, 'awbase_ai_index_enable', isset( $_POST['awbase_ai_index_enable'] ) ? '1' : '0' );
+    $text_fields = ['awbase_ai_index_key_concept', 'awbase_ai_index_original_term'];
+    foreach ( $text_fields as $field ) {
+        update_post_meta( $post_id, $field, sanitize_text_field( $_POST[ $field ] ?? '' ) );
+    }
+    $textarea_fields = ['awbase_ai_index_definition', 'awbase_ai_index_cite_when'];
+    foreach ( $textarea_fields as $field ) {
+        update_post_meta( $post_id, $field, sanitize_textarea_field( $_POST[ $field ] ?? '' ) );
+    }
 }
 
 // Save Citation Schema

@@ -330,29 +330,51 @@ function awbase_ai_tracker_page() {
         <?php endif; ?>
 
         <?php
-        // ---- ファイルアクセスカウントテーブル（棒グラフ右） ----
+        // ---- ファイルアクセスカウントテーブル（サービス × ファイル マトリクス） ----
         $file_counts = get_option( 'awbase_file_access_counts', [] );
-        $file_items  = [
-            'llms_txt'     => 'LLMs.txt',
-            'ai_index_md'  => 'ai-index.md',
+        $file_keys   = [
+            'llms_txt'      => 'LLMs.txt',
+            'ai_index_md'   => 'ai-index.md',
             'llms_full_txt' => 'LLMs-full.txt',
         ];
+
+        // 登場したサービス名を収集
+        $file_services = [];
+        foreach ( $file_keys as $fkey => $flabel ) {
+            if ( ! empty( $file_counts[ $fkey ] ) ) {
+                foreach ( array_keys( $file_counts[ $fkey ] ) as $svc ) {
+                    $file_services[ $svc ] = true;
+                }
+            }
+        }
+        // 左テーブルと同じ順序（合計降順）に揃える
+        $ordered_services = array_keys( $combined ); // 左テーブルで既に降順ソート済み
+        foreach ( array_keys( $file_services ) as $svc ) {
+            if ( ! in_array( $svc, $ordered_services, true ) ) $ordered_services[] = $svc;
+        }
+        $ordered_services = array_filter( $ordered_services, fn($s) => isset( $file_services[$s] ) );
         ?>
-        <div style="min-width:200px;padding-top:4px;">
-            <table class="wp-list-table widefat fixed striped" style="max-width:260px;">
+        <div style="padding-top:4px;">
+            <table class="wp-list-table widefat fixed striped" style="min-width:320px;">
                 <thead>
                     <tr>
-                        <th>ファイル</th>
-                        <th style="text-align:right;width:80px;">アクセス数</th>
+                        <th>Service</th>
+                        <?php foreach ( $file_keys as $flabel ) : ?>
+                        <th style="text-align:right;white-space:nowrap;"><code><?php echo esc_html( $flabel ); ?></code></th>
+                        <?php endforeach; ?>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach ( $file_items as $key => $label ) : ?>
+                    <?php if ( $ordered_services ) : foreach ( $ordered_services as $svc ) : ?>
                     <tr>
-                        <td><code><?php echo esc_html( $label ); ?></code></td>
-                        <td style="text-align:right;font-weight:700;"><?php echo number_format( isset( $file_counts[ $key ] ) ? (int) $file_counts[ $key ] : 0 ); ?></td>
+                        <td><strong><?php echo esc_html( $svc ); ?></strong></td>
+                        <?php foreach ( array_keys( $file_keys ) as $fkey ) : ?>
+                        <td style="text-align:right;"><?php echo number_format( isset( $file_counts[ $fkey ][ $svc ] ) ? (int) $file_counts[ $fkey ][ $svc ] : 0 ); ?></td>
+                        <?php endforeach; ?>
                     </tr>
-                    <?php endforeach; ?>
+                    <?php endforeach; else : ?>
+                    <tr><td colspan="<?php echo count( $file_keys ) + 1; ?>" style="text-align:center;">データがありません。</td></tr>
+                    <?php endif; ?>
                 </tbody>
             </table>
         </div>

@@ -31,11 +31,25 @@ function awbase_llms_txt_query_var( $vars ) {
 add_filter( 'query_vars', 'awbase_llms_txt_query_var' );
 
 // ---------------------------------------------------------------------------
-// File access counter（オプションテーブルで軽量管理）
+// File access counter（サービス別・ファイル別）
+// 構造: [ 'llms_txt' => [ 'ChatGPT' => 3, 'Claude' => 1 ], ... ]
 // ---------------------------------------------------------------------------
 function awbase_increment_file_access( $file_key ) {
+    $user_agent = isset( $_SERVER['HTTP_USER_AGENT'] ) ? $_SERVER['HTTP_USER_AGENT'] : '';
+    $service    = 'Unknown';
+    if ( $user_agent && function_exists( 'awbase_get_bot_map' ) ) {
+        foreach ( awbase_get_bot_map() as $bot => $info ) {
+            if ( stripos( $user_agent, $bot ) !== false ) {
+                $service = $info[0];
+                break;
+            }
+        }
+    }
+
     $counts = get_option( 'awbase_file_access_counts', [] );
-    $counts[ $file_key ] = ( isset( $counts[ $file_key ] ) ? (int) $counts[ $file_key ] : 0 ) + 1;
+    if ( ! isset( $counts[ $file_key ] ) )             $counts[ $file_key ] = [];
+    if ( ! isset( $counts[ $file_key ][ $service ] ) ) $counts[ $file_key ][ $service ] = 0;
+    $counts[ $file_key ][ $service ]++;
     update_option( 'awbase_file_access_counts', $counts, false );
 }
 
@@ -63,7 +77,7 @@ function awbase_llms_txt_output() {
         }
         awbase_increment_file_access( 'llms_full_txt' );
         header( 'Content-Type: text/plain; charset=utf-8' );
-        echo $options['llms_full_txt_content'];
+        echo awbase_generate_llms_full_content();
         exit;
     }
 
@@ -132,6 +146,49 @@ function awbase_generate_ai_index_content() {
             $out .= "\n";
         }
     }
+
+    return $out;
+}
+
+// ---------------------------------------------------------------------------
+// llms-full.txt 動的生成（公開済み投稿・固定ページの本文をそのまま出力）
+// ---------------------------------------------------------------------------
+function awbase_generate_llms_full_content() {
+    $site_name = get_bloginfo( 'name' );
+    $site_desc = get_bloginfo( 'description' );
+    $site_url  = home_url( '/' );
+
+    $out  = "# {$site_name}\n\n";
+    $out .= "> {$site_desc}\n\n";
+    $out .= "Source: {$site_url}\n\n";
+    $out .= "---\n\n";
+
+    $posts = get_posts( [
+        'post_type'      => [ 'post', 'page' ],
+        'post_status'    => 'publish',
+        'posts_per_page' => -1,
+        'orderby'        => 'date',
+        'order'          => 'DESC',
+    ] );
+
+    foreach ( $posts as $post ) {
+        setup_postdata( $post );
+
+        $title   = get_the_title( $post );
+        $url     = get_permalink( $post );
+        $date    = get_the_date( 'Y-m-d', $post );
+        $content = wp_strip_all_tags( apply_filters( 'the_content', $post->post_content ) );
+        // 連続する空行を1行に圧縮
+        $content = preg_replace( '/\n{3,}/', "\n\n", trim( $content ) );
+
+        $out .= "## {$title}\n\n";
+        $out .= "URL: {$url}\n";
+        $out .= "Date: {$date}\n\n";
+        $out .= $content . "\n\n";
+        $out .= "---\n\n";
+    }
+
+    wp_reset_postdata();
 
     return $out;
 }
