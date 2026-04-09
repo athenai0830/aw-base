@@ -282,7 +282,7 @@ function awbase_ai_tracker_page() {
         ?>
 
         <h2>サービス別アクセス集計（全期間）</h2>
-        <div style="display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap;">
+        <div style="display:flex;gap:32px;align-items:flex-start;">
         <table class="wp-list-table widefat fixed striped" style="max-width:560px;flex-shrink:0;">
             <thead>
                 <tr>
@@ -357,8 +357,8 @@ function awbase_ai_tracker_page() {
         }
         $col_count = count( $file_keys ) + 2; // Service + ファイル列 + 合計
         ?>
-        <div style="padding-top:4px;">
-            <table class="wp-list-table widefat fixed striped" style="min-width:360px;">
+        <div style="padding-top:4px;flex-shrink:0;">
+            <table class="wp-list-table fixed striped" style="width:auto;white-space:nowrap;">
                 <thead>
                     <tr>
                         <th>Service</th>
