@@ -328,17 +328,17 @@ function awbase_ai_tracker_page() {
             <?php endforeach; ?>
         </div>
         <?php endif; ?>
+        </div>
 
         <?php
-        // ---- ファイルアクセスカウントテーブル（サービス × ファイル マトリクス） ----
+        // ---- AI向けファイルアクセス集計（サービス × ファイル マトリクス） ----
         $file_counts = get_option( 'awbase_file_access_counts', [] );
         $file_keys   = [
             'llms_txt'      => 'LLMs.txt',
             'ai_index_md'   => 'ai-index.md',
             'llms_full_txt' => 'LLMs-full.txt',
         ];
-
-        // 登場したサービス名を収集
+        // ファイルにアクセスしたサービスを収集
         $file_services = [];
         foreach ( $file_keys as $fkey => $flabel ) {
             if ( ! empty( $file_counts[ $fkey ] ) ) {
@@ -347,42 +347,40 @@ function awbase_ai_tracker_page() {
                 }
             }
         }
-        // 左テーブルと同じ順序（合計降順）で全サービスを表示。ファイル未アクセスは 0
+        // $combined の降順に並べ、未登場サービスを末尾に追加
         $ordered_services = array_keys( $combined );
         foreach ( array_keys( $file_services ) as $svc ) {
             if ( ! in_array( $svc, $ordered_services, true ) ) $ordered_services[] = $svc;
         }
         ?>
-        <div style="padding-top:4px;flex-shrink:0;">
-            <table class="wp-list-table fixed striped" style="width:auto;white-space:nowrap;">
-                <thead>
-                    <tr>
-                        <th>Service</th>
-                        <?php foreach ( $file_keys as $flabel ) : ?>
-                        <th style="text-align:right;white-space:nowrap;"><code><?php echo esc_html( $flabel ); ?></code></th>
-                        <?php endforeach; ?>
-                        <th style="text-align:right;width:60px;">合計</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ( $ordered_services as $svc ) :
-                        $row_total = 0;
-                        foreach ( array_keys( $file_keys ) as $fkey ) {
-                            $row_total += isset( $file_counts[ $fkey ][ $svc ] ) ? (int) $file_counts[ $fkey ][ $svc ] : 0;
-                        }
-                    ?>
-                    <tr>
-                        <td><strong><?php echo esc_html( $svc ); ?></strong></td>
-                        <?php foreach ( array_keys( $file_keys ) as $fkey ) : ?>
-                        <td style="text-align:right;"><?php echo number_format( isset( $file_counts[ $fkey ][ $svc ] ) ? (int) $file_counts[ $fkey ][ $svc ] : 0 ); ?></td>
-                        <?php endforeach; ?>
-                        <td style="text-align:right;font-weight:700;"><?php echo number_format( $row_total ); ?></td>
-                    </tr>
+        <h2 style="margin-top:28px;">AI向けファイル アクセス集計（全期間）</h2>
+        <table class="wp-list-table widefat fixed striped" style="max-width:600px;">
+            <thead>
+                <tr>
+                    <th>Service</th>
+                    <?php foreach ( $file_keys as $flabel ) : ?>
+                    <th style="text-align:right;width:100px;"><code><?php echo esc_html( $flabel ); ?></code></th>
                     <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
-        </div>
+                    <th style="text-align:right;width:80px;">合計</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ( $ordered_services as $svc ) :
+                    $row_total = 0;
+                    foreach ( array_keys( $file_keys ) as $fkey ) {
+                        $row_total += isset( $file_counts[ $fkey ][ $svc ] ) ? (int) $file_counts[ $fkey ][ $svc ] : 0;
+                    }
+                ?>
+                <tr>
+                    <td><strong><?php echo esc_html( $svc ); ?></strong></td>
+                    <?php foreach ( array_keys( $file_keys ) as $fkey ) : ?>
+                    <td style="text-align:right;"><?php echo number_format( isset( $file_counts[ $fkey ][ $svc ] ) ? (int) $file_counts[ $fkey ][ $svc ] : 0 ); ?></td>
+                    <?php endforeach; ?>
+                    <td style="text-align:right;font-weight:700;"><?php echo number_format( $row_total ); ?></td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
 
         <?php if ( $theme_exists ) :
             $per_page = 50;
