@@ -86,9 +86,12 @@ function awbase_get_default_settings() {
         'fv_substack_url' => '',
         'fv_substack_text' => 'Substack で購読',
         
-        'sitemap_enable' => '1',
-        'llms_txt_enable' => '1',
-        'llms_txt_content' => "# " . get_bloginfo('name') . "\n\n> " . get_bloginfo('description'),
+        'sitemap_enable'        => '1',
+        'llms_txt_enable'       => '1',
+        'llms_txt_content'      => "# " . get_bloginfo('name') . "\n\n> " . get_bloginfo('description'),
+        'llms_full_txt_enable'  => '0',
+        'llms_full_txt_content' => '',
+        'ai_index_md_enable'    => '0',
         'noindex_search' => '0',
         'noindex_404' => '1',
         'noindex_date' => '0',
@@ -180,7 +183,7 @@ function awbase_sanitize_settings( $input ) {
         'general'     => ['show_global_nav', 'show_header', 'show_notice', 'show_fv', 'front_page_1col', 'show_global_nav_sub', 'show_header_sub', 'show_notice_sub'],
         'header'      => [],
         'firstview'   => ['fv_dot_pattern', 'fv_substack_enable'],
-        'seo'         => ['sitemap_enable', 'llms_txt_enable', 'noindex_search', 'noindex_404', 'noindex_date', 'noindex_author', 'noindex_paged', 'noindex_tag', 'canonical_paged_to_p1'],
+        'seo'         => ['sitemap_enable', 'llms_txt_enable', 'llms_full_txt_enable', 'ai_index_md_enable', 'noindex_search', 'noindex_404', 'noindex_date', 'noindex_author', 'noindex_paged', 'noindex_tag', 'canonical_paged_to_p1'],
         'performance' => ['lazy_load', 'lazy_load_fv_exclude', 'lazy_load_thumb_exclude', 'css_minify', 'js_minify', 'disable_image_sizes', 'recaptcha_limit', 'remove_wp_bloat', 'remove_dashicons', 'remove_block_css', 'remove_jquery'],
         'footer'      => [],
         'sns'         => ['sns_share_twitter', 'sns_share_facebook', 'sns_share_line', 'sns_share_pocket', 'sns_share_hatena', 'sns_share_feedly', 'sns_share_pinterest', 'sns_share_copy', 'sns_share_above_author', 'sns_share_below_eyecatch'],
@@ -197,7 +200,7 @@ function awbase_sanitize_settings( $input ) {
     $string_keys = array_merge(
         ['color_pattern', 'font_family', 'columns', 'sidebar_position', 'header_logo_align',
          'header_pattern', 'header_pattern_sub', 'nav_align', 'fv_height_unit', 'overlay_color',
-         'footer_logo_align', 'footer_nav_align', 'llms_txt_content',
+         'footer_logo_align', 'footer_nav_align', 'llms_txt_content', 'llms_full_txt_content',
          'popular_list_period',
          'schema_author_name', 'schema_author_altname', 'schema_author_url',
          'schema_org_name', 'schema_org_address', 'schema_org_phone', 'schema_org_email',
@@ -209,7 +212,7 @@ function awbase_sanitize_settings( $input ) {
     $kses_keys = [ 'fv_catchphrase' ];
 
     // Keys that are plain-text but multiline (sanitize_textarea_field)
-    $textarea_keys = [ 'llms_txt_content' ];
+    $textarea_keys = [ 'llms_txt_content', 'llms_full_txt_content' ];
 
     foreach ( $defaults as $key => $default_val ) {
         if ( isset( $input[ $key ] ) ) {

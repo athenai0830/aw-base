@@ -328,6 +328,34 @@ function awbase_ai_tracker_page() {
             <?php endforeach; ?>
         </div>
         <?php endif; ?>
+
+        <?php
+        // ---- ファイルアクセスカウントテーブル（棒グラフ右） ----
+        $file_counts = get_option( 'awbase_file_access_counts', [] );
+        $file_items  = [
+            'llms_txt'     => 'LLMs.txt',
+            'ai_index_md'  => 'ai-index.md',
+            'llms_full_txt' => 'LLMs-full.txt',
+        ];
+        ?>
+        <div style="min-width:200px;padding-top:4px;">
+            <table class="wp-list-table widefat fixed striped" style="max-width:260px;">
+                <thead>
+                    <tr>
+                        <th>ファイル</th>
+                        <th style="text-align:right;width:80px;">アクセス数</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ( $file_items as $key => $label ) : ?>
+                    <tr>
+                        <td><code><?php echo esc_html( $label ); ?></code></td>
+                        <td style="text-align:right;font-weight:700;"><?php echo number_format( isset( $file_counts[ $key ] ) ? (int) $file_counts[ $key ] : 0 ); ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
         </div>
 
         <?php if ( $theme_exists ) :

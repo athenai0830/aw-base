@@ -25,6 +25,28 @@ if ( ! defined( 'ABSPATH' ) ) exit;
                 <textarea name="awbase_settings[llms_txt_content]" class="large-text" rows="8"><?php echo esc_textarea($options['llms_txt_content']); ?></textarea>
             </div>
             <p class="description">Markdown形式で記述。AI向けに自サイトの構成や概要を渡します。</p>
+            <div style="margin-top:16px;">
+                <label class="awbase-toggle">
+                    <input type="checkbox" name="awbase_settings[llms_full_txt_enable]" value="1" <?php checked('1', $options['llms_full_txt_enable'] ?? '0'); ?>>
+                    <span class="awbase-toggle-slider"></span>
+                    <span class="awbase-toggle-label">LLMs-full.txtを生成する（/llms-full.txt）</span>
+                </label>
+                <div class="awbase-field-row" style="margin-top: 12px;">
+                    <textarea name="awbase_settings[llms_full_txt_content]" class="large-text" rows="8"><?php echo esc_textarea($options['llms_full_txt_content'] ?? ''); ?></textarea>
+                </div>
+                <p class="description">LLMs.txtより詳細な全文コンテンツ。Markdown形式で自由に記述。</p>
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <th>ai-index.md</th>
+        <td>
+            <label class="awbase-toggle">
+                <input type="checkbox" name="awbase_settings[ai_index_md_enable]" value="1" <?php checked('1', $options['ai_index_md_enable'] ?? '0'); ?>>
+                <span class="awbase-toggle-slider"></span>
+                <span class="awbase-toggle-label">ai-index.mdを生成する（/ai-index.md）</span>
+            </label>
+            <p class="description">有効にすると、各投稿のai-index設定（メタボックス内）に基づき /ai-index.md を動的生成します。</p>
         </td>
     </tr>
     <tr>
