@@ -206,11 +206,16 @@ function awbase_sanitize_settings( $input ) {
     );
 
     // Keys that allow limited HTML (wp_kses_post)
-    $kses_keys = [ 'llms_txt_content', 'fv_catchphrase' ];
+    $kses_keys = [ 'fv_catchphrase' ];
+
+    // Keys that are plain-text but multiline (sanitize_textarea_field)
+    $textarea_keys = [ 'llms_txt_content' ];
 
     foreach ( $defaults as $key => $default_val ) {
         if ( isset( $input[ $key ] ) ) {
-            if ( in_array( $key, $kses_keys ) ) {
+            if ( in_array( $key, $textarea_keys ) ) {
+                $output[ $key ] = sanitize_textarea_field( $input[ $key ] );
+            } elseif ( in_array( $key, $kses_keys ) ) {
                 $output[ $key ] = wp_kses_post( $input[ $key ] );
             } elseif ( is_numeric( $input[ $key ] ) && ! in_array( $key, $string_keys ) ) {
                 $output[ $key ] = intval( $input[ $key ] );

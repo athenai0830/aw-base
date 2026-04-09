@@ -765,7 +765,6 @@ body.home.layout-1c .site-main-wrap {
   background: var(--content-bg);
   border-radius: var(--card-radius);
   padding: 32px;
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.06);
 }
 
 .archive-header {
@@ -2632,7 +2631,7 @@ body.home.layout-1c .site-main-wrap {
   border-radius: var(--card-radius, 6px);
   padding: 24px 28px 20px;
   margin: 2em 0;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  box-shadow: none;
 }
 .awb-shortcode-section.awb-new-list-block {
   margin-top: 0;

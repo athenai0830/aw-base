@@ -187,6 +187,17 @@ function awbase_activate_flush_rewrites() {
 }
 add_action( 'after_switch_theme', 'awbase_activate_flush_rewrites' );
 
+// テーマバージョンが変わった時（更新後）もリライトルールをフラッシュ
+function awbase_maybe_flush_rewrites() {
+    $theme   = wp_get_theme();
+    $version = $theme->get( 'Version' );
+    if ( get_option( 'awbase_rewrite_version' ) !== $version ) {
+        flush_rewrite_rules();
+        update_option( 'awbase_rewrite_version', $version );
+    }
+}
+add_action( 'admin_init', 'awbase_maybe_flush_rewrites' );
+
 // Layout helper — header.php / footer.php 共用。サイドバー表示・レイアウトクラスを一元管理
 function awbase_get_layout() {
     static $cache = null;
