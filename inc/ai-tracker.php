@@ -279,6 +279,10 @@ function awbase_ai_tracker_page() {
         uasort( $combined, function($a, $b) {
             return array_sum($b) <=> array_sum($a);
         });
+
+        // 表示対象サービスを5種類に限定（収集は継続）
+        $display_services = [ 'Claude', 'ChatGPT', 'Gemini', 'Perplexity', 'CommonCrawl' ];
+        $combined = array_filter( $combined, fn( $k ) => in_array( $k, $display_services, true ), ARRAY_FILTER_USE_KEY );
         ?>
 
         <h2>サービス別アクセス集計（全期間）</h2>
@@ -347,11 +351,8 @@ function awbase_ai_tracker_page() {
                 }
             }
         }
-        // $combined の降順に並べ、未登場サービスを末尾に追加
-        $ordered_services = array_keys( $combined );
-        foreach ( array_keys( $file_services ) as $svc ) {
-            if ( ! in_array( $svc, $ordered_services, true ) ) $ordered_services[] = $svc;
-        }
+        // 表示対象の5サービスを固定順で表示
+        $ordered_services = $display_services;
         ?>
         <h2 style="margin-top:28px;">AI向けファイル アクセス集計（全期間）</h2>
         <table class="wp-list-table widefat fixed striped" style="max-width:560px;">
