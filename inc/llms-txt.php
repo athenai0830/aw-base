@@ -155,9 +155,24 @@ function awbase_generate_ai_index_content() {
 }
 
 // ---------------------------------------------------------------------------
+// llms-full.txt キャッシュクリア（投稿保存・削除・設定更新時）
+// ---------------------------------------------------------------------------
+function awbase_clear_llms_full_cache( $post_id = 0 ) {
+    // 自動保存・リビジョンはスキップ
+    if ( $post_id && ( wp_is_post_autosave( $post_id ) || wp_is_post_revision( $post_id ) ) ) return;
+    delete_transient( 'awbase_llms_full_txt' );
+}
+add_action( 'save_post',   'awbase_clear_llms_full_cache' );
+add_action( 'delete_post', 'awbase_clear_llms_full_cache' );
+add_action( 'update_option_awbase_settings', 'awbase_clear_llms_full_cache' );
+
+// ---------------------------------------------------------------------------
 // llms-full.txt 動的生成（公開済み投稿・固定ページの本文をそのまま出力）
 // ---------------------------------------------------------------------------
 function awbase_generate_llms_full_content() {
+    $cached = get_transient( 'awbase_llms_full_txt' );
+    if ( $cached !== false ) return $cached;
+
     $site_name = get_bloginfo( 'name' );
     $site_desc = get_bloginfo( 'description' );
     $site_url  = home_url( '/' );
@@ -192,6 +207,9 @@ function awbase_generate_llms_full_content() {
     }
 
     wp_reset_postdata();
+
+    // 24時間キャッシュ（投稿保存・削除時に自動クリアされるため安全網として）
+    set_transient( 'awbase_llms_full_txt', $out, DAY_IN_SECONDS );
 
     return $out;
 }
