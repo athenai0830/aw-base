@@ -198,6 +198,32 @@ function awbase_maybe_flush_rewrites() {
 }
 add_action( 'admin_init', 'awbase_maybe_flush_rewrites' );
 
+// ---------------------------------------------------------------------------
+// 拡張子付きURL（.txt / .xml / .md 等）のトレイリングスラッシュを統一（末尾なし）
+// 1. redirect_canonical によるスラッシュ付与を阻止
+// 2. /付きでアクセスされた場合は /なしに 301 リダイレクト
+// ---------------------------------------------------------------------------
+function awbase_no_trailing_slash_for_file_urls( $redirect_url, $requested_url ) {
+    $ext = pathinfo( parse_url( $requested_url, PHP_URL_PATH ), PATHINFO_EXTENSION );
+    if ( in_array( $ext, [ 'txt', 'xml', 'md', 'json', 'csv' ], true ) ) {
+        return false;
+    }
+    return $redirect_url;
+}
+add_filter( 'redirect_canonical', 'awbase_no_trailing_slash_for_file_urls', 10, 2 );
+
+function awbase_redirect_file_trailing_slash() {
+    $uri  = isset( $_SERVER['REQUEST_URI'] ) ? $_SERVER['REQUEST_URI'] : '';
+    $path = strtok( $uri, '?' );
+    $ext  = pathinfo( $path, PATHINFO_EXTENSION );
+    if ( in_array( $ext, [ 'txt', 'xml', 'md', 'json', 'csv' ], true ) && substr( $path, -1 ) === '/' ) {
+        $query = strpos( $uri, '?' ) !== false ? '?' . substr( $uri, strpos( $uri, '?' ) + 1 ) : '';
+        wp_redirect( home_url( rtrim( $path, '/' ) . $query ), 301 );
+        exit;
+    }
+}
+add_action( 'template_redirect', 'awbase_redirect_file_trailing_slash', 1 );
+
 // Layout helper — header.php / footer.php 共用。サイドバー表示・レイアウトクラスを一元管理
 function awbase_get_layout() {
     static $cache = null;
