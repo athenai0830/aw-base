@@ -252,7 +252,7 @@ function awbase_output_json_ld() {
 
     // --- 運営者・組織情報 ---
     $org_name    = ! empty( $options['schema_org_name'] )    ? $options['schema_org_name']    : $site_name;
-    $org_logo    = ! empty( $options['schema_og_image'] )    ? $options['schema_og_image']     :
+    $org_logo    = ! empty( $options['schema_logo'] )         ? $options['schema_logo']         :
                    ( ! empty( $options['logo_image'] )       ? $options['logo_image']          : '' );
     $org_address = ! empty( $options['schema_org_address'] ) ? $options['schema_org_address']  : '';
     $org_phone   = ! empty( $options['schema_org_phone'] )   ? $options['schema_org_phone']    : '';

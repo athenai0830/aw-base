@@ -130,11 +130,19 @@ if ( ! defined( 'ABSPATH' ) ) exit;
         </td>
     </tr>
     <tr>
-        <th>サイトロゴ</th>
+        <th>サイトロゴ<br><small style="font-weight:normal;color:#646970;">ヘッダー表示用</small></th>
         <td>
             <input type="url" name="awbase_settings[logo_image]" value="<?php echo esc_url( $options['logo_image'] ?? '' ); ?>" class="large-text" placeholder="https://example.com/logo.png">
-            <p class="description">ヘッダー・構造化データ（Schema.org）に使用するサイトロゴのURLを指定してください。<br>
+            <p class="description">ヘッダーに表示するロゴ画像のURLです。横長画像を設定してください。<br>
             幅・高さ・リンク先の詳細設定は「ヘッダー/ナビ」タブから行えます。</p>
+        </td>
+    </tr>
+    <tr>
+        <th>検索結果用ロゴ<br><small style="font-weight:normal;color:#646970;">Schema.org・構造化データ</small></th>
+        <td>
+            <input type="url" name="awbase_settings[schema_logo]" value="<?php echo esc_url( $options['schema_logo'] ?? '' ); ?>" class="large-text" placeholder="https://example.com/logo-square.png">
+            <p class="description">Google検索結果や構造化データ（Organization・publisher）に使用するロゴのURLです。<br>
+            <strong>推奨: 正方形・112×112px以上（PNG）</strong>　未設定の場合はヘッダーロゴが代わりに使用されます。</p>
         </td>
     </tr>
     <tr>

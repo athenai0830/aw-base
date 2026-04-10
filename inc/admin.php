@@ -154,6 +154,7 @@ function awbase_get_default_settings() {
         'schema_org_phone'      => '',
         'schema_org_email'      => '',
         'schema_og_image'       => '',
+        'schema_logo'           => '',
     );
     return $defaults;
 }
@@ -203,7 +204,7 @@ function awbase_sanitize_settings( $input ) {
          'popular_list_period',
          'schema_author_name', 'schema_author_altname', 'schema_author_url',
          'schema_org_name', 'schema_org_address', 'schema_org_phone', 'schema_org_email',
-         'schema_og_image', 'blogcard_noimage_url', 'favicon_url'],
+         'schema_og_image', 'schema_logo', 'blogcard_noimage_url', 'favicon_url'],
         $all_checkbox_keys
     );
 
