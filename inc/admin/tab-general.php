@@ -133,7 +133,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
         <th>サイトロゴ<br><small style="font-weight:normal;color:#646970;">ヘッダー表示用</small></th>
         <td>
             <input type="url" name="awbase_settings[logo_image]" value="<?php echo esc_url( $options['logo_image'] ?? '' ); ?>" class="large-text" placeholder="https://example.com/logo.png">
-            <p class="description">ヘッダーに表示するロゴ画像のURLです。横長画像を設定してください。<br>
+            <p class="description">ヘッダーに表示するロゴ画像のURLです。横長・正方形どちらでも使用できます。<br>
             幅・高さ・リンク先の詳細設定は「ヘッダー/ナビ」タブから行えます。</p>
         </td>
     </tr>
