@@ -130,6 +130,14 @@ if ( ! defined( 'ABSPATH' ) ) exit;
         </td>
     </tr>
     <tr>
+        <th>サイトロゴ</th>
+        <td>
+            <input type="url" name="awbase_settings[logo_image]" value="<?php echo esc_url( $options['logo_image'] ?? '' ); ?>" class="large-text" placeholder="https://example.com/logo.png">
+            <p class="description">ヘッダー・構造化データ（Schema.org）に使用するサイトロゴのURLを指定してください。<br>
+            幅・高さ・リンク先の詳細設定は「ヘッダー/ナビ」タブから行えます。</p>
+        </td>
+    </tr>
+    <tr>
         <th>代替画像<br><small style="font-weight:normal;color:#646970;">ブログカード・埋め込みブロック用</small></th>
         <td>
             <input type="url" name="awbase_settings[blogcard_noimage_url]" value="<?php echo esc_attr( $options['blogcard_noimage_url'] ?? '' ); ?>" class="regular-text" placeholder="https://example.com/noimage.png">
