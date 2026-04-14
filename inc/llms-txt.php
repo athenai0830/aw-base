@@ -173,16 +173,23 @@ function awbase_generate_ai_index_content() {
 }
 
 // ---------------------------------------------------------------------------
-// llms-full.txt キャッシュクリア（投稿保存・削除・設定更新時）
+// llms-full.txt キャッシュ再生成（クリア → 即座に再生成してキャッシュを常に維持）
+// 投稿保存・削除・設定更新時にバックグラウンドで実行。
+// ボットアクセス時にキャッシュが存在しない状態を防ぐ。
 // ---------------------------------------------------------------------------
-function awbase_clear_llms_full_cache( $post_id = 0 ) {
+function awbase_refresh_llms_full_cache( $post_id = 0 ) {
     // 自動保存・リビジョンはスキップ
     if ( $post_id && ( wp_is_post_autosave( $post_id ) || wp_is_post_revision( $post_id ) ) ) return;
     delete_transient( 'awbase_llms_full_txt' );
+    awbase_generate_llms_full_content(); // 即座に再生成してキャッシュ保存
 }
-add_action( 'save_post',   'awbase_clear_llms_full_cache' );
-add_action( 'delete_post', 'awbase_clear_llms_full_cache' );
-add_action( 'update_option_awbase_settings', 'awbase_clear_llms_full_cache' );
+// priority 20 — 投稿・設定が完全に保存されてから実行
+add_action( 'save_post',    'awbase_refresh_llms_full_cache', 20 );
+add_action( 'deleted_post', 'awbase_refresh_llms_full_cache', 20 );
+add_action( 'update_option_awbase_settings', 'awbase_refresh_llms_full_cache', 20 );
+
+// テーマ有効化時に初回キャッシュを生成
+add_action( 'after_switch_theme', 'awbase_generate_llms_full_content' );
 
 // ---------------------------------------------------------------------------
 // llms-full.txt 動的生成（公開済み投稿・固定ページの本文をそのまま出力）
