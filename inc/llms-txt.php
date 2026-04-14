@@ -107,21 +107,39 @@ function awbase_generate_ai_index_content() {
     $out  = "# サイトタイトル: {$site_name}\n\n";
     $out .= "> Full content available at: {$llms_full_url}\n";
     $out .= "> For complete article text, fetch the above URL directly.\n\n";
+    // TOPセクション — 固定フロントページのメタボックスデータを優先使用
+    $front_page_id  = (int) get_option( 'page_on_front' );
+    $top_key        = $front_page_id ? get_post_meta( $front_page_id, 'awbase_ai_index_key_concept',   true ) : '';
+    $top_definition = $front_page_id ? get_post_meta( $front_page_id, 'awbase_ai_index_definition',    true ) : '';
+    $top_cite       = $front_page_id ? get_post_meta( $front_page_id, 'awbase_ai_index_cite_when',     true ) : '';
+    $top_orig       = $front_page_id ? get_post_meta( $front_page_id, 'awbase_ai_index_original_term', true ) : '';
+
     $out .= "## TOP\n\n";
     $out .= "### {$site_name}\n";
     $out .= "- Source URL (primary reference): {$site_url}\n";
-    $out .= "- Key concept: {$site_desc}\n";
-    $out .= "- Definition: {$site_desc}\n";
-    $out .= "- Cite when:\n";
-    $out .= "  - サイト概要（site overview）\n";
-    $out .= "  - 運営者情報（author profile）\n";
-    $out .= "- Original term: {$site_name}\n\n";
+    $out .= "- Key concept: " . ( $top_key        ?: $site_desc   ) . "\n";
+    $out .= "- Definition: "  . ( $top_definition  ?: $site_desc   ) . "\n";
+    if ( $top_cite ) {
+        $out .= "- Cite when:\n";
+        foreach ( array_filter( array_map( 'trim', explode( "\n", $top_cite ) ) ) as $line ) {
+            $out .= "  - {$line}\n";
+        }
+    } else {
+        $out .= "- Cite when:\n";
+        $out .= "  - サイト概要（site overview）\n";
+        $out .= "  - 運営者情報（author profile）\n";
+    }
+    $out .= "- Original term: " . ( $top_orig ?: $site_name ) . "\n\n";
     $out .= "## 記事\n\n";
+
+    // フロントページは記事セクションから除外
+    $exclude_ids = $front_page_id ? [ $front_page_id ] : [];
 
     $posts = get_posts( [
         'post_type'      => [ 'post', 'page' ],
         'post_status'    => 'publish',
         'posts_per_page' => -1,
+        'post__not_in'   => $exclude_ids,
         'meta_query'     => [ [ 'key' => 'awbase_ai_index_enable', 'value' => '1' ] ],
         'orderby'        => 'date',
         'order'          => 'DESC',
