@@ -338,7 +338,7 @@ function awbase_generate_llms_full_content() {
     $posts = get_posts( [
         'post_type'      => [ 'post', 'page' ],
         'post_status'    => 'publish',
-        'posts_per_page' => -1,
+        'posts_per_page' => 2000, // メモリ保護のための上限
         'orderby'        => 'date',
         'order'          => 'DESC',
     ] );
