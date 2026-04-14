@@ -200,9 +200,10 @@ function awbase_generate_llms_full_content() {
         // 連続する空行を1行に圧縮
         $content = preg_replace( '/\n{3,}/', "\n\n", trim( $content ) );
 
-        $out .= "### {$title}\n\n";
-        $out .= "- ({$url})\n";
-        $out .= "- " . str_replace( "\n", "\n  ", $content ) . "\n\n";
+        $out .= "## {$title}\n\n";
+        $out .= "URL: {$url}\n";
+        $out .= "Published: {$date}\n\n";
+        $out .= $content . "\n\n";
         $out .= "---\n\n";
     }
 
