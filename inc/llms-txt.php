@@ -59,35 +59,49 @@ function awbase_increment_file_access( $file_key ) {
 function awbase_llms_txt_output() {
     $options = get_option( 'awbase_settings', awbase_get_default_settings() );
 
+    $is_llms      = get_query_var( 'awbase_llms_txt' )      === '1';
+    $is_llms_full = get_query_var( 'awbase_llms_full_txt' ) === '1';
+    $is_ai_index  = get_query_var( 'awbase_ai_index_md' )   === '1';
+
+    if ( ! $is_llms && ! $is_llms_full && ! $is_ai_index ) return;
+
+    // WordPressが途中まで構築した出力バッファをすべてクリア（サイトマップと同様）
+    while ( ob_get_level() > 0 ) {
+        ob_end_clean();
+    }
+
     // llms.txt
-    if ( get_query_var( 'awbase_llms_txt' ) === '1' ) {
+    if ( $is_llms ) {
         if ( empty( $options['llms_txt_enable'] ) || $options['llms_txt_enable'] !== '1' ) {
             status_header( 404 ); exit;
         }
         awbase_increment_file_access( 'llms_txt' );
         header( 'Content-Type: text/plain; charset=utf-8' );
+        status_header( 200 );
         echo $options['llms_txt_content'];
         exit;
     }
 
     // llms-full.txt
-    if ( get_query_var( 'awbase_llms_full_txt' ) === '1' ) {
+    if ( $is_llms_full ) {
         if ( empty( $options['llms_full_txt_enable'] ) || $options['llms_full_txt_enable'] !== '1' ) {
             status_header( 404 ); exit;
         }
         awbase_increment_file_access( 'llms_full_txt' );
         header( 'Content-Type: text/plain; charset=utf-8' );
+        status_header( 200 );
         echo awbase_generate_llms_full_content();
         exit;
     }
 
     // ai-index.md
-    if ( get_query_var( 'awbase_ai_index_md' ) === '1' ) {
+    if ( $is_ai_index ) {
         if ( empty( $options['ai_index_md_enable'] ) || $options['ai_index_md_enable'] !== '1' ) {
             status_header( 404 ); exit;
         }
         awbase_increment_file_access( 'ai_index_md' );
         header( 'Content-Type: text/plain; charset=utf-8' );
+        status_header( 200 );
         echo awbase_generate_ai_index_content();
         exit;
     }
@@ -190,6 +204,16 @@ add_action( 'update_option_awbase_settings', 'awbase_refresh_llms_full_cache', 2
 
 // テーマ有効化時に初回キャッシュを生成
 add_action( 'after_switch_theme', 'awbase_generate_llms_full_content' );
+
+// 管理画面訪問時にキャッシュが存在しなければ自動生成（テーマ更新後の初回起動に対応）
+add_action( 'admin_init', function() {
+    $opts = get_option( 'awbase_settings', [] );
+    if ( ! empty( $opts['llms_full_txt_enable'] ) && $opts['llms_full_txt_enable'] === '1' ) {
+        if ( get_transient( 'awbase_llms_full_txt' ) === false ) {
+            awbase_generate_llms_full_content();
+        }
+    }
+} );
 
 // ---------------------------------------------------------------------------
 // llms-full.txt 動的生成（公開済み投稿・固定ページの本文をそのまま出力）
