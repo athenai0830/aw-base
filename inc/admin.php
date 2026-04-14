@@ -159,13 +159,19 @@ function awbase_get_default_settings() {
     return $defaults;
 }
 
-// Get Theme Option（static でメモ化 — 設定配列のマージはリクエストに1回）
-function get_awbase_option( $key ) {
+// 全設定を返す（static でメモ化 — リクエストに1回だけマージ）
+function awbase_get_settings() {
     static $options = null;
     if ( $options === null ) {
         $saved   = get_option( 'awbase_settings', [] );
         $options = is_array( $saved ) ? array_merge( awbase_get_default_settings(), $saved ) : awbase_get_default_settings();
     }
+    return $options;
+}
+
+// 単一キー取得（後方互換）
+function get_awbase_option( $key ) {
+    $options  = awbase_get_settings();
     $defaults = awbase_get_default_settings();
     return isset( $options[ $key ] ) ? $options[ $key ] : ( isset( $defaults[ $key ] ) ? $defaults[ $key ] : '' );
 }

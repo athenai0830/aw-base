@@ -8,7 +8,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 function awbase_canonical_url_fix( $canonical_url, $post ) {
     if ( ! is_paged() ) return $canonical_url;
 
-    $options = get_option( 'awbase_settings', awbase_get_default_settings() );
+    $options = awbase_get_settings();
     $page    = get_query_var( 'paged' );
 
     if ( ! empty( $options['canonical_paged_to_p1'] ) && $options['canonical_paged_to_p1'] == '1' ) {
@@ -28,7 +28,7 @@ add_filter( 'get_canonical_url', 'awbase_canonical_url_fix', 10, 2 );
 function awbase_term_canonical() {
     if ( ! ( is_category() || is_tag() || is_tax() ) || ! is_paged() ) return;
 
-    $options = get_option( 'awbase_settings', awbase_get_default_settings() );
+    $options = awbase_get_settings();
     $page    = get_query_var( 'paged' );
 
     if ( ! empty( $options['canonical_paged_to_p1'] ) && $options['canonical_paged_to_p1'] == '1' ) {
@@ -139,7 +139,7 @@ add_action( 'wp_head', 'awbase_output_favicon', 1 );
 
 // 3. Output Meta tags in wp_head
 function awbase_output_seo_meta_tags() {
-    $options = get_option('awbase_settings', awbase_get_default_settings());
+    $options = awbase_get_settings();
 
     // Basic variables
     $title = '';
@@ -253,7 +253,7 @@ add_filter('pre_get_document_title', 'awbase_override_document_title');
 // 4. Structured Data / JSON-LD
 // ============================================================
 function awbase_output_json_ld() {
-    $options  = get_option( 'awbase_settings', awbase_get_default_settings() );
+    $options  = awbase_get_settings();
     $site_name = get_bloginfo( 'name' );
     $site_url  = home_url( '/' );
     $site_desc = get_bloginfo( 'description' );
