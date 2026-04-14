@@ -216,6 +216,110 @@ add_action( 'admin_init', function() {
 } );
 
 // ---------------------------------------------------------------------------
+// Gutenbergブロック → Markdown 変換（parse_blocks 使用・レンダリングなしで高速）
+// ---------------------------------------------------------------------------
+function awbase_blocks_to_markdown( $blocks ) {
+    $out = '';
+    foreach ( $blocks as $block ) {
+        $name  = $block['blockName']  ?? '';
+        $attrs = $block['attrs']      ?? [];
+        $inner = $block['innerBlocks'] ?? [];
+
+        // innerContent からHTMLを結合してテキスト抽出
+        $raw = '';
+        foreach ( $block['innerContent'] as $chunk ) {
+            if ( is_string( $chunk ) ) $raw .= $chunk;
+        }
+        $text = trim( wp_strip_all_tags( $raw ) );
+
+        switch ( $name ) {
+            case 'core/heading':
+                $level  = max( 1, min( (int) ( $attrs['level'] ?? 2 ), 6 ) );
+                $hashes = str_repeat( '#', $level );
+                if ( $text ) $out .= "{$hashes} {$text}\n\n";
+                break;
+
+            case 'core/paragraph':
+                if ( $text ) $out .= "{$text}\n\n";
+                break;
+
+            case 'core/list':
+                $ordered = ! empty( $attrs['ordered'] );
+                $num = 1;
+                foreach ( $inner as $item ) {
+                    // list-item のテキスト
+                    $item_raw = '';
+                    foreach ( $item['innerContent'] as $c ) {
+                        if ( is_string( $c ) ) $item_raw .= $c;
+                    }
+                    $item_text = trim( wp_strip_all_tags( $item_raw ) );
+                    $prefix    = $ordered ? "{$num}. " : '- ';
+                    if ( $item_text ) $out .= "{$prefix}{$item_text}\n";
+                    // ネストリスト
+                    if ( ! empty( $item['innerBlocks'] ) ) {
+                        foreach ( explode( "\n", trim( awbase_blocks_to_markdown( $item['innerBlocks'] ) ) ) as $nl ) {
+                            if ( $nl ) $out .= "  {$nl}\n";
+                        }
+                    }
+                    $num++;
+                }
+                $out .= "\n";
+                break;
+
+            case 'core/list-item':
+                // core/list 側で処理
+                break;
+
+            case 'core/quote':
+            case 'core/pullquote':
+                $q = $inner ? awbase_blocks_to_markdown( $inner ) : $text;
+                foreach ( explode( "\n", trim( $q ) ) as $ql ) {
+                    $out .= '> ' . $ql . "\n";
+                }
+                $out .= "\n";
+                break;
+
+            case 'core/code':
+            case 'core/preformatted':
+                if ( $text ) $out .= "```\n{$text}\n```\n\n";
+                break;
+
+            case 'core/separator':
+                $out .= "---\n\n";
+                break;
+
+            case 'core/image':
+            case 'core/gallery':
+            case 'core/embed':
+            case 'core/audio':
+            case 'core/video':
+                // メディア・埋め込みはLLM向けにスキップ
+                break;
+
+            // コンテナブロック — innerBlocks を再帰処理
+            case 'core/group':
+            case 'core/columns':
+            case 'core/column':
+            case 'core/cover':
+            case 'core/media-text':
+            case 'core/details':
+                if ( $inner ) $out .= awbase_blocks_to_markdown( $inner );
+                break;
+
+            default:
+                // 未知のブロック: innerBlocks があれば再帰、なければテキスト抽出
+                if ( $inner ) {
+                    $out .= awbase_blocks_to_markdown( $inner );
+                } elseif ( $text ) {
+                    $out .= "{$text}\n\n";
+                }
+                break;
+        }
+    }
+    return $out;
+}
+
+// ---------------------------------------------------------------------------
 // llms-full.txt 動的生成（公開済み投稿・固定ページの本文をそのまま出力）
 // ---------------------------------------------------------------------------
 function awbase_generate_llms_full_content() {
@@ -245,9 +349,9 @@ function awbase_generate_llms_full_content() {
         $title   = get_the_title( $post );
         $url     = get_permalink( $post );
         $date    = get_the_date( 'Y-m-d', $post );
-        // apply_filters('the_content') はブロックレンダリングが重いため使用しない
-        $content = wp_strip_all_tags( $post->post_content );
-        // 連続する空行を1行に圧縮
+        // parse_blocks でブロック構造をMarkdownに変換（レンダリングなしで高速）
+        $blocks  = parse_blocks( $post->post_content );
+        $content = awbase_blocks_to_markdown( $blocks );
         $content = preg_replace( '/\n{3,}/', "\n\n", trim( $content ) );
 
         $out .= "## {$title}\n\n";
