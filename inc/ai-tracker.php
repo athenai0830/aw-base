@@ -81,8 +81,12 @@ function awbase_build_service_breakdown( $post_id ) {
     $plugin_table = $wpdb->prefix . 'ai_traffic_logs';
     $theme_table  = $wpdb->prefix . 'ai_traffic_log';
 
-    $plugin_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$plugin_table}'" ) === $plugin_table;
-    $theme_exists  = $wpdb->get_var( "SHOW TABLES LIKE '{$theme_table}'"  ) === $theme_table;
+    // SHOW TABLES はリクエスト内で1回だけ実行（投稿一覧でのN+1防止）
+    static $plugin_exists = null, $theme_exists = null;
+    if ( $plugin_exists === null ) {
+        $plugin_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$plugin_table}'" ) === $plugin_table;
+        $theme_exists  = $wpdb->get_var( "SHOW TABLES LIKE '{$theme_table}'"  ) === $theme_table;
+    }
 
     $breakdown = [];
 
