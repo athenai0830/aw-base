@@ -29,15 +29,57 @@ function awbase_track_pv() {
     if ( ! is_array( $daily ) ) $daily = [];
     $today = gmdate( 'Y-m-d' );
     $daily[ $today ] = isset( $daily[ $today ] ) ? $daily[ $today ] + 1 : 1;
-
-    // 古いデータ（31日以上前）を削除してメモリを節約
-    $cutoff = gmdate( 'Y-m-d', strtotime( '-31 days' ) );
-    foreach ( array_keys( $daily ) as $date ) {
-        if ( $date < $cutoff ) unset( $daily[ $date ] );
-    }
     update_post_meta( $post_id, $daily_key, $daily );
 }
 add_action( 'wp', 'awbase_track_pv' );
+
+// 古いPVデータ（31日以上前）の一括削除 – daily cron で実行
+function awbase_cleanup_old_pv() {
+    global $wpdb;
+
+    $cutoff   = gmdate( 'Y-m-d', strtotime( '-31 days' ) );
+    $meta_key = '_awbase_pv_daily';
+
+    // daily データを持つ投稿を取得
+    $rows = $wpdb->get_results(
+        $wpdb->prepare(
+            "SELECT post_id, meta_value FROM {$wpdb->postmeta} WHERE meta_key = %s",
+            $meta_key
+        )
+    );
+
+    foreach ( $rows as $row ) {
+        $daily = maybe_unserialize( $row->meta_value );
+        if ( ! is_array( $daily ) ) continue;
+
+        $original_count = count( $daily );
+        foreach ( array_keys( $daily ) as $date ) {
+            if ( $date < $cutoff ) unset( $daily[ $date ] );
+        }
+
+        // 変化があった場合のみ更新
+        if ( count( $daily ) !== $original_count ) {
+            update_post_meta( (int) $row->post_id, $meta_key, $daily );
+        }
+    }
+}
+add_action( 'awbase_daily_pv_cleanup', 'awbase_cleanup_old_pv' );
+
+// cron スケジュール登録 / 解除
+function awbase_schedule_pv_cleanup() {
+    if ( ! wp_next_scheduled( 'awbase_daily_pv_cleanup' ) ) {
+        wp_schedule_event( time(), 'daily', 'awbase_daily_pv_cleanup' );
+    }
+}
+add_action( 'wp', 'awbase_schedule_pv_cleanup' );
+
+function awbase_unschedule_pv_cleanup() {
+    $timestamp = wp_next_scheduled( 'awbase_daily_pv_cleanup' );
+    if ( $timestamp ) {
+        wp_unschedule_event( $timestamp, 'awbase_daily_pv_cleanup' );
+    }
+}
+register_deactivation_hook( get_template_directory() . '/functions.php', 'awbase_unschedule_pv_cleanup' );
 
 // 2. 期間別PV取得ヘルパー
 function awbase_get_pv( $post_id, $period = 'total' ) {

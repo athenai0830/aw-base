@@ -55,9 +55,11 @@ function awbase_new_list_shortcode( $atts ) {
         'arrow'      => 0,
     ), $atts, 'new_list' );
 
+    $count = max( 1, min( 100, intval( $atts['count'] ) ) );
+
     $args = array(
         'post_type'      => 'post',
-        'posts_per_page' => intval( $atts['count'] ),
+        'posts_per_page' => $count,
         'post_status'    => 'publish',
         'ignore_sticky_posts' => 1,
     );
@@ -130,17 +132,18 @@ function awbase_popular_list_shortcode( $atts ) {
         'snippet'    => 1,
     ), $atts, 'popular_list' );
 
+    $count  = max( 1, min( 100, intval( $atts['count'] ) ) );
     $period = in_array( $atts['period'], array('total','month','week','day') ) ? $atts['period'] : 'total';
 
     // 1時間キャッシュ（期間集計は重いため）
-    $cache_key    = 'awbase_popular_' . md5( $period . '_' . $atts['count'] . '_' . $atts['cats'] );
+    $cache_key    = 'awbase_popular_' . md5( $period . '_' . $count . '_' . $atts['cats'] );
     $cached_html  = get_transient( $cache_key );
     if ( $cached_html !== false ) return $cached_html;
 
     if ( $period === 'total' ) {
         $args = array(
             'post_type'      => 'post',
-            'posts_per_page' => intval( $atts['count'] ),
+            'posts_per_page' => $count,
             'post_status'    => 'publish',
             'meta_key'       => '_awbase_pv_total',
             'orderby'        => 'meta_value_num',
@@ -177,11 +180,11 @@ function awbase_popular_list_shortcode( $atts ) {
         }
 
         arsort( $scores );
-        $ordered_ids = array_slice( array_keys( $scores ), 0, intval( $atts['count'] ) );
+        $ordered_ids = array_slice( array_keys( $scores ), 0, $count );
 
         $args = array(
             'post_type'      => 'post',
-            'posts_per_page' => intval( $atts['count'] ),
+            'posts_per_page' => $count,
             'post_status'    => 'publish',
             'post__in'       => $ordered_ids,
             'orderby'        => 'post__in',
