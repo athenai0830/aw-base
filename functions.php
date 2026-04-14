@@ -229,7 +229,7 @@ function awbase_get_layout() {
     static $cache = null;
     if ( $cache !== null ) return $cache;
 
-    $options = array_merge( awbase_get_default_settings(), (array) get_option( 'awbase_settings', [] ) );
+    $options = awbase_get_settings();
     $is_top  = is_front_page() || is_home();
     $is_1col = $options['columns'] === '1';
 

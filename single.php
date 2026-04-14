@@ -70,7 +70,11 @@ if ( $hide_reading_time !== '1' ) {
                     <meta itemprop="width" content="<?php echo esc_attr( $thumb_src[1] ); ?>">
                     <meta itemprop="height" content="<?php echo esc_attr( $thumb_src[2] ); ?>">
                 <?php endif; ?>
-                <?php the_post_thumbnail('full'); ?>
+                <?php the_post_thumbnail( 'full', [
+                    'fetchpriority' => 'high',
+                    'loading'       => 'eager',
+                    'decoding'      => 'async',
+                ] ); ?>
             </figure>
         <?php endif; ?>
 
@@ -112,7 +116,7 @@ if ( $hide_reading_time !== '1' ) {
 
         <div class="single-content entry-content" itemprop="mainEntityOfPage">
             <?php if ( $hide_toc !== '1' ) : ?>
-                <details id="awbase-toc-container" class="toc" open>
+                <details id="awbase-toc-container" class="toc">
                     <summary class="toc-title">目次</summary>
                     <ul class="toc-list"></ul>
                 </details>

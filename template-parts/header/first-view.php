@@ -2,8 +2,7 @@
 // AW-Base First View Template Part
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-$saved   = get_option('awbase_settings', []);
-$options = is_array($saved) ? array_merge(awbase_get_default_settings(), $saved) : awbase_get_default_settings();
+$options = awbase_get_settings();
 
 $bg_image_url = ! empty($options['fv_bg_image']) ? esc_url($options['fv_bg_image']) : '';
 $bg_style = $bg_image_url ? esc_attr( 'background-image: url(' . $bg_image_url . ');' ) : '';
@@ -28,7 +27,7 @@ $fv_logo_url = ! empty($options['fv_logo_url']) ? esc_url($options['fv_logo_url'
     <div class="fv-overlay"></div>
     <div class="fv-content">
         <?php if ( ! empty($options['fv_logo_image']) ) :
-            $img_tag = '<img class="fv-logo" src="' . esc_url($options['fv_logo_image']) . '" alt="' . esc_attr( get_bloginfo('name') ) . '" style="' . esc_attr($fv_logo_style) . '" ' . ( ! empty($options['lazy_load_fv_exclude']) ? 'fetchpriority="high"' : '' ) . '>';
+            $img_tag = '<img class="fv-logo" src="' . esc_url($options['fv_logo_image']) . '" alt="' . esc_attr( get_bloginfo('name') ) . '" style="' . esc_attr($fv_logo_style) . '" fetchpriority="high" loading="eager">';
             if ( $fv_logo_url ) :
         ?>
             <a href="<?php echo $fv_logo_url; ?>" class="fv-logo-link"><?php echo $img_tag; ?></a>

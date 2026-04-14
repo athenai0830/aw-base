@@ -2,7 +2,7 @@
 // AW-Base Notice Area Template Part
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-$options = get_option('awbase_settings', awbase_get_default_settings());
+$options = awbase_get_settings();
 $text = $options['notice_text'];
 $url = $options['notice_url'];
 

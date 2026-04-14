@@ -2,7 +2,7 @@
 // AW-Base Header Area Template Part
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-$options = get_option('awbase_settings', awbase_get_default_settings());
+$options = awbase_get_settings();
 $align = $options['header_logo_align'] ? $options['header_logo_align'] : 'left';
 $logo_url = ! empty($options['logo_url']) ? esc_url($options['logo_url']) : home_url('/');
 ?>

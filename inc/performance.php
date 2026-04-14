@@ -2,8 +2,7 @@
 // AW-Base Performance Optimizations
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-$_saved  = get_option('awbase_settings', []);
-$options = is_array($_saved) ? array_merge(awbase_get_default_settings(), $_saved) : awbase_get_default_settings();
+$options = awbase_get_settings();
 
 // ============================================================
 // 1. Disable unused image sizes
@@ -174,14 +173,18 @@ add_action( 'wp_head', function() {
 }, 2 );
 
 // ============================================================
-// 14. LCP 対策: FV 背景画像（TOPページ）
+// 14. LCP 対策: FV 背景画像・FV ロゴ画像（TOPページ）
 // ============================================================
 add_action( 'wp_head', function() {
     if ( ! ( is_front_page() || is_home() ) ) return;
     if ( get_awbase_option( 'show_fv' ) !== '1' ) return;
-    $fv_bg = get_awbase_option( 'fv_bg_image' );
+    $fv_bg   = get_awbase_option( 'fv_bg_image' );
+    $fv_logo = get_awbase_option( 'fv_logo_image' );
     if ( ! empty( $fv_bg ) ) {
         echo '<link rel="preload" as="image" href="' . esc_url( $fv_bg ) . '" fetchpriority="high">' . "\n";
+    }
+    if ( ! empty( $fv_logo ) ) {
+        echo '<link rel="preload" as="image" href="' . esc_url( $fv_logo ) . '" fetchpriority="high">' . "\n";
     }
 }, 1 );
 

@@ -3,9 +3,7 @@
 if ( ! defined( 'ABSPATH' ) ) exit;
 
 function awbase_dynamic_css() {
-    $defaults = awbase_get_default_settings();
-    $saved    = get_option('awbase_settings', []);
-    $options  = is_array($saved) ? array_merge($defaults, $saved) : $defaults;
+    $options  = awbase_get_settings();
     $pattern  = $options['color_pattern'];
     $font     = $options['font_family'];
 

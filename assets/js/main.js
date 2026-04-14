@@ -54,6 +54,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             });
 
+            // CLS対策: コンテンツを埋め終わってから open にする
+            tocContainer.open = true;
+
             // Smooth scroll for TOC links
             tocList.addEventListener('click', function (e) {
                 var link = e.target.closest('a');
@@ -169,7 +172,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     hint.classList.add('is-hidden');
                 }
             }
-        });
+        }, { passive: true });
     });
 
     // CSS レイアウト確定後にヒントを初期化（DOMContentLoaded 直後は scrollWidth が未確定のため rAF×2 で遅延）
@@ -184,7 +187,7 @@ document.addEventListener('DOMContentLoaded', function () {
         document.querySelectorAll('.table-scroll, .entry-content .wp-block-table').forEach(function (el) {
             setupTableScrollHint(el);
         });
-    });
+    }, { passive: true });
 
     // ----------------------------------------
     // Popular list slider (矢印表示のみ・幅はCSS任せ)
@@ -232,7 +235,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     setCardWidths();
                     updateArrows();
                 }, 120);
-            });
+            }, { passive: true });
 
             if (prevBtn) {
                 prevBtn.addEventListener('click', function () {
