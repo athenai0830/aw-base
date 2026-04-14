@@ -46,6 +46,7 @@ add_action( 'wp_head', 'awbase_term_canonical', 1 );
 // 2. Taxonomy SEO Meta Fields (Category & Tag)
 function awbase_taxonomy_add_meta_fields( $taxonomy ) {
     ?>
+    <?php wp_nonce_field( 'awbase_save_taxonomy_meta', 'awbase_taxonomy_nonce' ); ?>
     <div class="form-field term-group">
         <label for="awbase_seo_title">SEOタイトル</label>
         <input type="text" id="awbase_seo_title" name="awbase_seo_title" value="">
@@ -92,12 +93,19 @@ function awbase_taxonomy_edit_meta_fields( $term, $taxonomy ) {
             <p class="description">別URLを正規化先とする場合に入力。</p>
         </td>
     </tr>
+    <tr>
+        <td colspan="2"><?php wp_nonce_field( 'awbase_save_taxonomy_meta', 'awbase_taxonomy_nonce' ); ?></td>
+    </tr>
     <?php
 }
 add_action( 'category_edit_form_fields', 'awbase_taxonomy_edit_meta_fields', 10, 2 );
 add_action( 'post_tag_edit_form_fields', 'awbase_taxonomy_edit_meta_fields', 10, 2 );
 
 function awbase_save_taxonomy_custom_meta( $term_id ) {
+    if ( ! isset( $_POST['awbase_taxonomy_nonce'] ) ||
+         ! wp_verify_nonce( $_POST['awbase_taxonomy_nonce'], 'awbase_save_taxonomy_meta' ) ) {
+        return;
+    }
     if ( isset( $_POST['awbase_seo_title'] ) ) {
         update_term_meta( $term_id, 'awbase_seo_title', sanitize_text_field( $_POST['awbase_seo_title'] ) );
     }

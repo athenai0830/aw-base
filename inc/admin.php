@@ -279,17 +279,17 @@ function awbase_handle_clear_cache() {
     global $wpdb;
 
     // OGP transient（awbase_fetch_ogp のキャッシュ）
-    $wpdb->query(
-        "DELETE FROM {$wpdb->options}
-         WHERE option_name LIKE '_transient_awbase_ogp_%'
-            OR option_name LIKE '_transient_timeout_awbase_ogp_%'"
-    );
+    $wpdb->query( $wpdb->prepare(
+        "DELETE FROM {$wpdb->options} WHERE option_name LIKE %s OR option_name LIKE %s",
+        $wpdb->esc_like( '_transient_awbase_ogp_' ) . '%',
+        $wpdb->esc_like( '_transient_timeout_awbase_ogp_' ) . '%'
+    ) );
 
     // WordPress oEmbed キャッシュ（_oembed_* post_meta）
-    $wpdb->query(
-        "DELETE FROM {$wpdb->postmeta}
-         WHERE meta_key LIKE '_oembed_%'"
-    );
+    $wpdb->query( $wpdb->prepare(
+        "DELETE FROM {$wpdb->postmeta} WHERE meta_key LIKE %s",
+        $wpdb->esc_like( '_oembed_' ) . '%'
+    ) );
 
     do_action( 'awbase_after_clear_cache' );
 
