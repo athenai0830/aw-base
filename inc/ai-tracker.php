@@ -285,8 +285,16 @@ function awbase_ai_tracker_page() {
         $combined = array_filter( $combined, fn( $k ) => in_array( $k, $display_services, true ), ARRAY_FILTER_USE_KEY );
         ?>
 
+        <style>
+        .awbase-tracker-row { display:flex; gap:32px; align-items:flex-start; flex-wrap:wrap; }
+        @media (max-width: 782px) {
+            .awbase-tracker-row { flex-direction:column; }
+            .awbase-tracker-bar  { width:100% !important; min-width:0 !important; }
+            .awbase-tracker-bar > div { width:100% !important; }
+        }
+        </style>
         <h2>サービス別アクセス集計（全期間）</h2>
-        <div style="display:flex;gap:32px;align-items:flex-start;">
+        <div class="awbase-tracker-row">
         <table class="wp-list-table widefat fixed striped" style="max-width:560px;flex-shrink:0;">
             <thead>
                 <tr>
@@ -315,7 +323,7 @@ function awbase_ai_tracker_page() {
         <?php if ( $combined ) :
             $max_total = max( array_map( 'array_sum', $combined ) );
         ?>
-        <div style="min-width:240px;padding-top:4px;">
+        <div class="awbase-tracker-bar" style="min-width:240px;padding-top:4px;">
             <?php foreach ( $combined as $service => $types ) :
                 $total = array_sum( $types );
                 $pct   = $max_total > 0 ? round( $total / $max_total * 100 ) : 0;

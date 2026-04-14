@@ -37,7 +37,7 @@ add_action( 'template_redirect', function() {
 
     if ( ! $sitemap && ! $type ) return;
 
-    $allowed = [ 'pages', 'posts', 'categories', 'tags' ];
+    $allowed = [ 'pages', 'posts', 'categories', 'tags', 'ai' ];
     if ( $type && ! in_array( $type, $allowed, true ) ) {
         status_header( 404 );
         exit;
@@ -94,6 +94,17 @@ function awbase_sitemap_output_index() {
         awbase_sitemap_index_group( 'tags', $tag_total, $n );
     }
 
+    // AI files（有効になっているものだけ）
+    $opts = get_option( 'awbase_settings', [] );
+    $has_ai = ! empty( $opts['llms_txt_enable'] )      && $opts['llms_txt_enable']      === '1'
+           || ! empty( $opts['llms_full_txt_enable'] ) && $opts['llms_full_txt_enable'] === '1'
+           || ! empty( $opts['ai_index_md_enable'] )   && $opts['ai_index_md_enable']   === '1';
+    if ( $has_ai ) {
+        echo "\t<sitemap>\n";
+        echo "\t\t<loc>" . esc_url( home_url( '/sitemap-ai-1.xml' ) ) . "</loc>\n";
+        echo "\t</sitemap>\n";
+    }
+
     echo '</sitemapindex>';
 }
 
@@ -128,6 +139,9 @@ function awbase_sitemap_output_sub( $type, $page ) {
             break;
         case 'tags':
             awbase_sitemap_sub_terms( 'post_tag', $page, $n );
+            break;
+        case 'ai':
+            awbase_sitemap_sub_ai();
             break;
     }
 
@@ -197,6 +211,22 @@ function awbase_sitemap_sub_terms( $taxonomy, $page, $per_page ) {
         if ( ! is_wp_error( $link ) ) {
             echo awbase_sitemap_url( $link, '', 'weekly' );
         }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// AI files sub-sitemap（llms.txt / llms-full.txt / ai-index.md）
+// ---------------------------------------------------------------------------
+function awbase_sitemap_sub_ai() {
+    $opts = get_option( 'awbase_settings', [] );
+    if ( ! empty( $opts['llms_txt_enable'] ) && $opts['llms_txt_enable'] === '1' ) {
+        echo awbase_sitemap_url( home_url( '/llms.txt' ), '', 'weekly' );
+    }
+    if ( ! empty( $opts['llms_full_txt_enable'] ) && $opts['llms_full_txt_enable'] === '1' ) {
+        echo awbase_sitemap_url( home_url( '/llms-full.txt' ), '', 'weekly' );
+    }
+    if ( ! empty( $opts['ai_index_md_enable'] ) && $opts['ai_index_md_enable'] === '1' ) {
+        echo awbase_sitemap_url( home_url( '/ai-index.md' ), '', 'weekly' );
     }
 }
 
