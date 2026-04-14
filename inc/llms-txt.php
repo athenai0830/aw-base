@@ -214,7 +214,8 @@ function awbase_generate_llms_full_content() {
         $title   = get_the_title( $post );
         $url     = get_permalink( $post );
         $date    = get_the_date( 'Y-m-d', $post );
-        $content = wp_strip_all_tags( apply_filters( 'the_content', $post->post_content ) );
+        // apply_filters('the_content') はブロックレンダリングが重いため使用しない
+        $content = wp_strip_all_tags( $post->post_content );
         // 連続する空行を1行に圧縮
         $content = preg_replace( '/\n{3,}/', "\n\n", trim( $content ) );
 
