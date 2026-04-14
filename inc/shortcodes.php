@@ -132,6 +132,11 @@ function awbase_popular_list_shortcode( $atts ) {
 
     $period = in_array( $atts['period'], array('total','month','week','day') ) ? $atts['period'] : 'total';
 
+    // 1時間キャッシュ（期間集計は重いため）
+    $cache_key    = 'awbase_popular_' . md5( $period . '_' . $atts['count'] . '_' . $atts['cats'] );
+    $cached_html  = get_transient( $cache_key );
+    if ( $cached_html !== false ) return $cached_html;
+
     if ( $period === 'total' ) {
         $args = array(
             'post_type'      => 'post',
@@ -226,7 +231,9 @@ function awbase_popular_list_shortcode( $atts ) {
     wp_reset_postdata();
 
     echo '</div>';
-    return ob_get_clean();
+    $html = ob_get_clean();
+    set_transient( $cache_key, $html, HOUR_IN_SECONDS );
+    return $html;
 }
 add_shortcode( 'popular_list', 'awbase_popular_list_shortcode' );
 
