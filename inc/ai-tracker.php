@@ -116,7 +116,7 @@ function awbase_build_service_breakdown( $post_id ) {
 //    プラグインが有効な場合はプラグインに委譲するためスキップ
 // ---------------------------------------------------------------------------
 function awbase_track_ai_bots() {
-    if ( function_exists( 'await_table_name' ) ) return; // プラグイン有効時はスキップ（プラグインに委譲）
+    if ( defined( 'AWAIT_VERSION' ) ) return; // プラグイン有効時はスキップ（プラグインに委譲）
     $options = awbase_get_settings();
     if ( $options['ai_tracking_enable'] !== '1' ) return;
     if ( is_admin() ) return;
@@ -220,7 +220,7 @@ function awbase_ai_tracker_page() {
     <div class="wrap">
         <h1>AIボット トラフィックログ <span class="aw-logo-mark">AW</span></h1>
 
-        <?php if ( function_exists( 'await_table_name' ) ) : ?>
+        <?php if ( defined( 'AWAIT_VERSION' ) ) : ?>
         <div class="notice notice-info inline" style="margin:12px 0;">
             <p><strong>AI Traffic Tracker プラグイン が有効です。</strong>
             テーマの書き込みは停止中。共用テーブル (<code><?php echo esc_html( $table ); ?></code>) のデータを表示しています。</p>
