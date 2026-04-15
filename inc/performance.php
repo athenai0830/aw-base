@@ -219,3 +219,41 @@ function awbase_is_first_card() {
     static $count = 0;
     return $count++ === 0;
 }
+
+// ============================================================
+// 18. テーブル横スクロールラッパー（PHP側でプリレンダリング）
+//     JS DOM 操作による CLS を解消する
+// ============================================================
+function awbase_wrap_content_tables( $content ) {
+    if ( strpos( $content, '<table' ) === false ) return $content;
+
+    // wp-block-table figure を一時退避（Gutenberg テーブルはラップしない）
+    $protected = [];
+    $content = preg_replace_callback(
+        '/<figure[^>]*class="[^"]*wp-block-table[^"]*"[^>]*>.*?<\/figure>/si',
+        function ( $m ) use ( &$protected ) {
+            $key              = '<!-- AWBASE_PROTECTED_TABLE_' . count( $protected ) . ' -->';
+            $protected[ $key ] = $m[0];
+            return $key;
+        },
+        $content
+    );
+
+    // 残ったベアテーブルをラップ（ヒントもプリレンダリング）
+    $content = preg_replace_callback(
+        '/<table[\s>].*?<\/table>/si',
+        function ( $m ) {
+            return '<p class="table-scroll-hint is-hidden">横にスライドできます</p>'
+                 . '<div class="table-scroll">' . $m[0] . '</div>';
+        },
+        $content
+    );
+
+    // 退避した Gutenberg テーブルを復元
+    if ( $protected ) {
+        $content = str_replace( array_keys( $protected ), array_values( $protected ), $content );
+    }
+
+    return $content;
+}
+add_filter( 'the_content', 'awbase_wrap_content_tables' );

@@ -78,6 +78,7 @@ function awbase_enqueue_scripts() {
 
     // Front-end JS – jQuery不要、defer で非同期実行
     wp_enqueue_script( 'awbase-script', get_template_directory_uri() . '/assets/js/main.js', array(), $js_ver, true );
+    wp_add_inline_script( 'awbase-script', 'window.awbaseData=' . wp_json_encode( [ 'restUrl' => esc_url_raw( rest_url() ) ] ) . ';', 'before' );
 
     // Font Awesome 6
     wp_enqueue_style( 'font-awesome', 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css', array(), '6.5.2' );

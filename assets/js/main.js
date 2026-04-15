@@ -74,6 +74,30 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // ----------------------------------------
+    // Blogcard: 外部リンクを非同期フェッチで差し替え
+    // ----------------------------------------
+    document.querySelectorAll('.awb-blogcard-placeholder').forEach(function (placeholder) {
+        var url    = placeholder.dataset.url;
+        var target = placeholder.dataset.target || '';
+        if (!url) return;
+        var endpoint = (window.awbaseData && window.awbaseData.restUrl)
+            ? window.awbaseData.restUrl + 'awbase/v1/blogcard?url=' + encodeURIComponent(url) + '&target=' + encodeURIComponent(target)
+            : '/wp-json/awbase/v1/blogcard?url=' + encodeURIComponent(url) + '&target=' + encodeURIComponent(target);
+        fetch(endpoint)
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (data && data.html) {
+                    var tmp = document.createElement('div');
+                    tmp.innerHTML = data.html;
+                    if (tmp.firstChild) {
+                        placeholder.parentNode.replaceChild(tmp.firstChild, placeholder);
+                    }
+                }
+            })
+            .catch(function () { /* フェッチ失敗時はプレースホルダーのまま */ });
+    });
+
+    // ----------------------------------------
     // SNS Share: copy URL button
     // ----------------------------------------
     document.addEventListener('click', function (e) {
@@ -135,32 +159,16 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // ----------------------------------------
-    // Table horizontal scroll wrapper
+    // Table horizontal scroll hint（ラッパー・ヒントは PHP 側でプリレンダリング済み）
     // ----------------------------------------
-    document.querySelectorAll('.entry-content table').forEach(function (table) {
-        if (table.closest('.table-scroll') || table.closest('.wp-block-table')) return;
-        var wrapper = document.createElement('div');
-        wrapper.className = 'table-scroll';
-        table.parentNode.insertBefore(wrapper, table);
-        wrapper.appendChild(table);
-    });
-
-    // スクロール可能なテーブルにヒントテキストを表示・スクロール開始でフェードアウト
+    // scrollWidth 確認後に is-hidden を付け外しするだけ
     function setupTableScrollHint(el) {
-        var overflows = el.scrollWidth > el.clientWidth + 1;
         var hint = el.previousElementSibling;
-        var isHint = hint && hint.classList.contains('table-scroll-hint');
-
-        if (overflows) {
-            if (!isHint) {
-                hint = document.createElement('p');
-                hint.className = 'table-scroll-hint';
-                hint.textContent = '横にスライドできます';
-                el.parentNode.insertBefore(hint, el);
-            }
+        if (!hint || !hint.classList.contains('table-scroll-hint')) return;
+        if (el.scrollWidth > el.clientWidth + 1) {
             hint.classList.remove('is-hidden');
         } else {
-            if (isHint) { hint.classList.add('is-hidden'); }
+            hint.classList.add('is-hidden');
         }
     }
 

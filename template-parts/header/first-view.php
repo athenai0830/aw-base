@@ -27,7 +27,9 @@ $fv_logo_url = ! empty($options['fv_logo_url']) ? esc_url($options['fv_logo_url'
     <div class="fv-overlay"></div>
     <div class="fv-content">
         <?php if ( ! empty($options['fv_logo_image']) ) :
-            $img_tag = '<img class="fv-logo" src="' . esc_url($options['fv_logo_image']) . '" alt="' . esc_attr( get_bloginfo('name') ) . '" style="' . esc_attr($fv_logo_style) . '" fetchpriority="high" loading="eager">';
+            $img_w_attr = $fv_logo_w > 0 ? ' width="' . $fv_logo_w . '"' : '';
+            $img_h_attr = $fv_logo_h > 0 ? ' height="' . $fv_logo_h . '"' : '';
+            $img_tag = '<img class="fv-logo" src="' . esc_url($options['fv_logo_image']) . '" alt="' . esc_attr( get_bloginfo('name') ) . '" style="' . esc_attr($fv_logo_style) . '"' . $img_w_attr . $img_h_attr . ' fetchpriority="high" loading="eager">';
             if ( $fv_logo_url ) :
         ?>
             <a href="<?php echo $fv_logo_url; ?>" class="fv-logo-link"><?php echo $img_tag; ?></a>

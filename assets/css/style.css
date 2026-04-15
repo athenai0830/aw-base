@@ -2933,6 +2933,10 @@ body.home.layout-1c .site-main-wrap {
   .awb-blogcard-body     { padding: 12px 14px 36px; }
 }
 
+/* ローディング中プレースホルダー */
+.awb-blogcard--loading .awb-blogcard-inner { pointer-events: none; opacity: .6; }
+.awb-blogcard-img--loading { background: var(--border-color); }
+
 /* ----------------------------------------------------------
    リンクプレビューカード（core/embed フォールバック）
    テキスト左・サムネイル右

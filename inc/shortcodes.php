@@ -660,7 +660,25 @@ function awbase_blogcard_shortcode( $atts ) {
         }
     }
 
-    // noimage URL を一度だけ解決（初期表示 & onerror フォールバックで共用）
+    // 外部リンク: プレースホルダーを返す（JS が REST API 経由で非同期フェッチ）
+    if ( ! $is_inner ) {
+        $display_url = wp_parse_url( $url, PHP_URL_HOST ) ?: $url;
+        return '<div class="awb-blogcard-placeholder" data-url="' . esc_attr( $url ) . '" data-target="' . esc_attr( $atts['target'] ) . '">'
+             . '<div class="awb-blogcard awb-blogcard--loading"><a class="awb-blogcard-inner">'
+             . '<div class="awb-blogcard-img awb-blogcard-img--loading"></div>'
+             . '<div class="awb-blogcard-body"><span class="awb-blogcard-url">' . esc_html( $display_url ) . '</span></div>'
+             . '</a></div></div>';
+    }
+
+    return awbase_render_blogcard_html( $url, $title, $desc, $img_url, $atts['target'] );
+}
+add_shortcode( 'card',     'awbase_blogcard_shortcode' );
+add_shortcode( 'blogcard', 'awbase_blogcard_shortcode' );
+
+/**
+ * ブログカード HTML を生成（内部リンク・REST API レスポンス共用）
+ */
+function awbase_render_blogcard_html( $url, $title = '', $desc = '', $img_url = '', $target = '' ) {
     $custom_noimage = get_awbase_option( 'blogcard_noimage_url' );
     $noimage_url    = ! empty( $custom_noimage )
         ? esc_url( $custom_noimage )
@@ -669,13 +687,8 @@ function awbase_blogcard_shortcode( $atts ) {
     if ( empty( $img_url ) ) {
         $img_url = $noimage_url;
     }
-    $onerror = ' onerror="this.onerror=null;this.src=\'' . esc_attr( $noimage_url ) . '\'"';
-
-    $target_attr = '';
-    if ( $atts['target'] === '_blank' ) {
-        $target_attr = ' target="_blank" rel="noopener noreferrer"';
-    }
-
+    $onerror     = ' onerror="this.onerror=null;this.src=\'' . esc_attr( $noimage_url ) . '\'"';
+    $target_attr = $target === '_blank' ? ' target="_blank" rel="noopener noreferrer"' : '';
     $display_url = wp_parse_url( $url, PHP_URL_HOST ) ?: $url;
 
     $html  = '<div class="awb-blogcard">';
@@ -697,8 +710,36 @@ function awbase_blogcard_shortcode( $atts ) {
 
     return $html;
 }
-add_shortcode( 'card',     'awbase_blogcard_shortcode' );
-add_shortcode( 'blogcard', 'awbase_blogcard_shortcode' );
+
+/**
+ * REST API: 外部ブログカード HTML を返す
+ * GET /wp-json/awbase/v1/blogcard?url=https://example.com&target=_blank
+ */
+add_action( 'rest_api_init', function () {
+    register_rest_route( 'awbase/v1', '/blogcard', [
+        'methods'             => 'GET',
+        'callback'            => 'awbase_rest_blogcard',
+        'permission_callback' => '__return_true',
+        'args'                => [
+            'url'    => [ 'required' => true,  'sanitize_callback' => 'esc_url_raw' ],
+            'target' => [ 'required' => false, 'sanitize_callback' => 'sanitize_text_field', 'default' => '' ],
+        ],
+    ] );
+} );
+
+function awbase_rest_blogcard( WP_REST_Request $request ) {
+    $url    = $request->get_param( 'url' );
+    $target = $request->get_param( 'target' );
+
+    $scheme = wp_parse_url( $url, PHP_URL_SCHEME );
+    if ( ! in_array( $scheme, [ 'http', 'https' ], true ) ) {
+        return new WP_Error( 'invalid_url', 'Invalid URL scheme', [ 'status' => 400 ] );
+    }
+
+    $og    = awbase_fetch_ogp( $url );
+    $html  = awbase_render_blogcard_html( $url, $og['title'], $og['description'], $og['image'], $target );
+    return rest_ensure_response( [ 'html' => $html ] );
+}
 
 // ============================================================
 // 7. [faq] / [faq_item] Shortcode - FAQ（構造化データ付き）（Cocoon互換）
