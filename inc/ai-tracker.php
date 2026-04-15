@@ -470,9 +470,10 @@ function awbase_show_ai_hits_column( $column_name, $post_id ) {
     if ( ! $table_exists ) { echo '-'; return; }
 
     // ---- D/W/M/All カウント ----
-    $d   = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE post_id=%d AND accessed_at >= %s", $post_id, gmdate('Y-m-d H:i:s', strtotime('-1 day')) ) );
-    $w   = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE post_id=%d AND accessed_at >= %s", $post_id, gmdate('Y-m-d H:i:s', strtotime('-7 days')) ) );
-    $m   = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE post_id=%d AND accessed_at >= %s", $post_id, gmdate('Y-m-d H:i:s', strtotime('-30 days')) ) );
+    $now_ts = current_time( 'timestamp' );
+    $d   = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE post_id=%d AND accessed_at >= %s", $post_id, gmdate( 'Y-m-d 00:00:00', $now_ts ) ) );
+    $w   = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE post_id=%d AND accessed_at >= %s", $post_id, gmdate( 'Y-m-d H:i:s', $now_ts - ( 7 * DAY_IN_SECONDS ) ) ) );
+    $m   = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE post_id=%d AND accessed_at >= %s", $post_id, gmdate( 'Y-m-d H:i:s', $now_ts - ( 30 * DAY_IN_SECONDS ) ) ) );
     $all = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$table} WHERE post_id=%d", $post_id ) );
 
     // ---- ツールチップ: Service | Ref | Learn | Fetch テーブル ----
