@@ -9,20 +9,13 @@
  */
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-// Thumbnail – awbase-card → large → full の順でフォールバック
-$thumb_url = '';
-if ( has_post_thumbnail() ) {
-    foreach ( array( 'awbase-card', 'large', 'full' ) as $_size ) {
-        $thumb_url = get_the_post_thumbnail_url( get_the_ID(), $_size );
-        if ( $thumb_url ) break;
-    }
-}
-if ( ! $thumb_url ) {
-    $thumb_url = get_template_directory_uri() . '/assets/img/no-image.svg';
-}
-$is_first    = function_exists( 'awbase_is_first_card' ) ? awbase_is_first_card() : false;
-$img_loading  = $is_first ? 'eager' : 'lazy';
-$img_priority = $is_first ? ' fetchpriority="high"' : '';
+$thumb_id   = get_post_thumbnail_id();
+$is_first   = function_exists( 'awbase_is_first_card' ) ? awbase_is_first_card() : false;
+$img_attrs  = [
+    'alt'           => get_the_title(),
+    'loading'       => $is_first ? 'eager' : 'lazy',
+    'fetchpriority' => $is_first ? 'high'  : '',
+];
 
 // Category
 $categories = get_the_category();
@@ -32,10 +25,7 @@ $cat_id     = ! empty( $categories ) ? $categories[0]->term_id : 0;
 <article id="post-<?php the_ID(); ?>" <?php post_class( 'entry-card entry-card-type-grid' ); ?>>
     <a href="<?php the_permalink(); ?>" class="entry-card-link">
         <figure class="entry-card-thumb">
-            <img src="<?php echo esc_url( $thumb_url ); ?>"
-                 alt="<?php the_title_attribute(); ?>"
-                 loading="<?php echo $img_loading; ?>"
-                 decoding="async"<?php echo $img_priority; ?>>
+            <?php echo awbase_picture( (int) $thumb_id, 'awbase-card', $img_attrs ); ?>
             <?php if ( $cat_name ) : ?>
                 <span class="entry-card-cat cat-id-<?php echo esc_attr( $cat_id ); ?>">
                     <?php echo esc_html( $cat_name ); ?>

@@ -194,6 +194,7 @@ function awbase_sanitize_settings( $input ) {
         'footer'      => [],
         'sns'         => ['sns_share_twitter', 'sns_share_facebook', 'sns_share_line', 'sns_share_pocket', 'sns_share_hatena', 'sns_share_feedly', 'sns_share_pinterest', 'sns_share_copy', 'sns_share_above_author', 'sns_share_below_eyecatch'],
         'ai'          => ['ai_tracking_enable', 'llms_txt_enable', 'llms_full_txt_enable', 'ai_index_md_enable'],
+        'images'      => [], // 設定保存なし（AJAXアクションのみ）
     );
     $active_tab = sanitize_key( $_POST['awbase_active_tab'] ?? 'general' );
     $active_tab = isset( $tab_checkboxes[ $active_tab ] ) ? $active_tab : 'general';
@@ -323,6 +324,11 @@ function awbase_admin_enqueue_scripts( $hook ) {
     wp_enqueue_style( 'font-awesome', 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css', array(), '6.5.2' );
     wp_enqueue_style( 'awbase-admin-style', get_template_directory_uri() . '/assets/css/admin.css', array(), null );
     wp_enqueue_script( 'awbase-admin-script', get_template_directory_uri() . '/assets/js/admin.js', array('jquery', 'media-editor'), null, true );
+    wp_localize_script( 'awbase-admin-script', 'awbaseAdminData', [
+        'optimizeNonce' => wp_create_nonce( 'awbase_optimize' ),
+        'deleteNonce'   => wp_create_nonce( 'awbase_delete_thumbs' ),
+        'ajaxUrl'       => admin_url( 'admin-ajax.php' ),
+    ] );
 }
 add_action( 'admin_enqueue_scripts', 'awbase_admin_enqueue_scripts' );
 
@@ -330,7 +336,7 @@ add_action( 'admin_enqueue_scripts', 'awbase_admin_enqueue_scripts' );
 function awbase_settings_page() {
     $saved   = get_option( 'awbase_settings', [] );
     $options = is_array( $saved ) ? array_merge( awbase_get_default_settings(), $saved ) : awbase_get_default_settings();
-    $allowed_tabs = ['general', 'header', 'firstview', 'seo', 'performance', 'footer', 'sns', 'ai'];
+    $allowed_tabs = ['general', 'header', 'firstview', 'seo', 'performance', 'footer', 'sns', 'ai', 'images'];
     $raw_tab = isset( $_GET['tab'] ) ? sanitize_key( $_GET['tab'] ) : 'general';
     $active_tab = in_array( $raw_tab, $allowed_tabs, true ) ? $raw_tab : 'general';
     ?>
@@ -363,6 +369,7 @@ function awbase_settings_page() {
             <a href="?page=awbase_settings&tab=footer" class="nav-tab <?php echo $active_tab == 'footer' ? 'nav-tab-active' : ''; ?>"><i class="fa-solid fa-shoe-prints"></i> フッター</a>
             <a href="?page=awbase_settings&tab=ai" class="nav-tab <?php echo $active_tab == 'ai' ? 'nav-tab-active' : ''; ?>"><i class="fa-solid fa-robot"></i> AIトラッキング</a>
             <a href="?page=awbase_settings&tab=sns" class="nav-tab <?php echo $active_tab == 'sns' ? 'nav-tab-active' : ''; ?>"><i class="fa-solid fa-share-nodes"></i> SNSシェア</a>
+            <a href="?page=awbase_settings&tab=images" class="nav-tab <?php echo $active_tab == 'images' ? 'nav-tab-active' : ''; ?>"><i class="fa-solid fa-images"></i> 画像最適化</a>
         </h2>
 
         <form method="post" action="options.php">
@@ -372,7 +379,9 @@ function awbase_settings_page() {
             <input type="hidden" name="awbase_active_tab" value="<?php echo esc_attr( $active_tab ); ?>">
             <?php
             require_once AWBASE_DIR . '/inc/admin/tab-' . $active_tab . '.php';
-            submit_button( '設定を保存' );
+            if ( $active_tab !== 'images' ) {
+                submit_button( '設定を保存' );
+            }
             ?>
         </form>
     </div>

@@ -57,9 +57,7 @@ function awbase_setup() {
         'mobile'  => 'モバイルナビゲーション',
     ) );
 
-    // 16:9 thumbnail size for entry cards
-    add_image_size( 'awbase-card', 800, 450, true );
-    add_image_size( 'awbase-card-sm', 460, 259, true );
+    // サムネイルサイズは image-optimizer.php が管理（uploads/aw-thumbs/ に独自生成）
 }
 add_action( 'after_setup_theme', 'awbase_setup' );
 
@@ -100,6 +98,7 @@ require_once AWBASE_DIR . '/inc/seo.php';
 require_once AWBASE_DIR . '/inc/post-meta.php';
 require_once AWBASE_DIR . '/inc/ai-tracker.php';
 require_once AWBASE_DIR . '/inc/pv-tracker.php';
+require_once AWBASE_DIR . '/inc/image-optimizer.php';
 require_once AWBASE_DIR . '/inc/performance.php';
 require_once AWBASE_DIR . '/inc/shortcodes.php';
 require_once AWBASE_DIR . '/inc/blocks.php';
