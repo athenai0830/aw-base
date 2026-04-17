@@ -256,6 +256,10 @@ add_action( 'wp_ajax_awbase_optimize_batch', function(): void {
 
     $pending = [];
     foreach ( $all_ids as $id ) {
+        // 元ファイルが存在しない孤立レコードはスキップ
+        $src = get_attached_file( $id );
+        if ( ! $src || ! file_exists( $src ) ) continue;
+
         foreach ( $sizes as [ $w, $h ] ) {
             if ( ! file_exists( "{$dir}/{$id}-{$w}x{$h}.jpg" ) ) {
                 $pending[] = $id;

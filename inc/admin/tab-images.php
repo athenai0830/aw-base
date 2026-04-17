@@ -17,7 +17,14 @@ $all_ids   = get_posts( [
 ] );
 $total     = count( $all_ids );
 $optimized = 0;
+$orphaned  = 0;
 foreach ( $all_ids as $id ) {
+    // 元ファイルが存在しない孤立レコードは別扱い
+    $src = get_attached_file( $id );
+    if ( ! $src || ! file_exists( $src ) ) {
+        $orphaned++;
+        continue;
+    }
     $ok = true;
     foreach ( $sizes as [ $w, $h ] ) {
         if ( ! file_exists( "{$dir}/{$id}-{$w}x{$h}.jpg" ) ) {
@@ -27,7 +34,7 @@ foreach ( $all_ids as $id ) {
     }
     if ( $ok ) $optimized++;
 }
-$pending = $total - $optimized;
+$pending = $total - $optimized - $orphaned;
 ?>
 <div class="awbase-tab-section">
     <h2>画像最適化</h2>
@@ -62,6 +69,12 @@ $pending = $total - $optimized;
             <th>未処理</th>
             <td id="awb-pending-count"><?php echo esc_html( $pending ); ?> 枚</td>
         </tr>
+        <?php if ( $orphaned > 0 ) : ?>
+        <tr>
+            <th>孤立レコード</th>
+            <td style="color:#b32d2e;"><?php echo esc_html( $orphaned ); ?> 件（元ファイルなし・処理不可）</td>
+        </tr>
+        <?php endif; ?>
     </table>
 
     <div class="awb-img-actions">
