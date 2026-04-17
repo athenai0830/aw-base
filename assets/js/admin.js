@@ -123,14 +123,13 @@ jQuery(document).ready(function($) {
                 .show();
         }
 
-        function awbRunBatch( offset ) {
+        function awbRunBatch() {
             $.ajax({
                 url:  awbaseAdminData.ajaxUrl,
                 type: 'POST',
                 data: {
                     action: 'awbase_optimize_batch',
                     nonce:  awbaseAdminData.optimizeNonce,
-                    offset: offset,
                 },
                 success: function( res ) {
                     if ( ! res.success ) {
@@ -140,18 +139,18 @@ jQuery(document).ready(function($) {
                     }
                     var d = res.data;
                     $progressBar.css( 'width', d.pct + '%' );
-                    $progressStatus.text( d.offset + ' / ' + d.total + ' 枚処理済み（' + d.pct + '%）' );
+                    $progressStatus.text( ( d.total - d.remaining ) + ' / ' + d.total + ' 枚処理済み（' + d.pct + '%）' );
 
                     if ( d.done ) {
                         $progressBar.css( 'width', '100%' );
-                        $progressStatus.text( '完了！ ' + d.total + ' 枚を処理しました' );
-                        $optimizedCount.text( d.total + ' 枚' );
+                        $progressStatus.text( '完了！ ' + d.total + ' 枚を最適化しました' );
+                        $optimizedCount.text( $totalCount.text() );
                         $pendingCount.text( '0 枚' );
                         $optimizeBtn.text( '最適化済み' );
                         $deleteBtn.prop( 'disabled', false );
                         awbShowResult( '最適化が完了しました。', false );
                     } else {
-                        awbRunBatch( d.offset );
+                        awbRunBatch();
                     }
                 },
                 error: function() {
@@ -168,7 +167,7 @@ jQuery(document).ready(function($) {
             $progressWrap.show();
             $progressBar.css( 'width', '0%' );
             $progressStatus.text( '処理中...' );
-            awbRunBatch( 0 );
+            awbRunBatch();
         });
 
         // ── 全削除 ────────────────────────────────────────────

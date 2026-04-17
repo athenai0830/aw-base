@@ -239,47 +239,63 @@ add_action( 'wp_ajax_awbase_optimize_batch', function(): void {
 
     set_time_limit( 120 );
 
-    $offset = absint( $_POST['offset'] ?? 0 );
-    $limit  = 10;
+    $limit = 10;
+    $dir   = awbase_thumb_dir();
+    $sizes = awbase_get_thumb_sizes();
 
-    $ids = get_posts( [
+    // 全ラスター画像IDを取得し、未処理のものだけ抽出
+    $all_ids = get_posts( [
         'post_type'      => 'attachment',
         'post_mime_type' => [ 'image/jpeg', 'image/png', 'image/gif', 'image/webp' ],
         'post_status'    => 'inherit',
-        'posts_per_page' => $limit,
-        'offset'         => $offset,
+        'posts_per_page' => -1,
         'orderby'        => 'ID',
         'order'          => 'ASC',
         'fields'         => 'ids',
     ] );
 
-    foreach ( $ids as $id ) {
-        foreach ( awbase_get_thumb_sizes() as [ $w, $h ] ) {
+    $pending = [];
+    foreach ( $all_ids as $id ) {
+        foreach ( $sizes as [ $w, $h ] ) {
+            if ( ! file_exists( "{$dir}/{$id}-{$w}x{$h}.jpg" ) ) {
+                $pending[] = $id;
+                break;
+            }
+        }
+    }
+
+    // 初回リクエスト時に総未処理件数をキャッシュ（進捗率の分母に使用）
+    $initial_total = (int) get_transient( 'awbase_pending_total' );
+    if ( ! $initial_total ) {
+        $initial_total = count( $pending );
+        set_transient( 'awbase_pending_total', $initial_total, HOUR_IN_SECONDS );
+    }
+
+    // 未処理の先頭 $limit 件だけ処理
+    $batch = array_slice( $pending, 0, $limit );
+    foreach ( $batch as $id ) {
+        foreach ( $sizes as [ $w, $h ] ) {
             awbase_generate_thumb( $id, $w, $h );
         }
     }
 
-    // トータル件数（1時間キャッシュ）
-    $total = (int) get_transient( 'awbase_img_total' );
-    if ( ! $total ) {
-        $total = count( get_posts( [
-            'post_type'      => 'attachment',
-            'post_mime_type' => [ 'image/jpeg', 'image/png', 'image/gif', 'image/webp' ],
-            'post_status'    => 'inherit',
-            'posts_per_page' => -1,
-            'fields'         => 'ids',
-        ] ) );
-        set_transient( 'awbase_img_total', $total, HOUR_IN_SECONDS );
+    $remaining = count( $pending ) - count( $batch );
+    $done      = $remaining === 0;
+
+    if ( $done ) {
+        delete_transient( 'awbase_pending_total' );
     }
 
-    $new_offset = $offset + count( $ids );
+    $pct = $initial_total > 0
+        ? min( 100, (int) round( ( $initial_total - $remaining ) / $initial_total * 100 ) )
+        : 100;
 
     wp_send_json_success( [
-        'processed' => count( $ids ),
-        'offset'    => $new_offset,
-        'done'      => count( $ids ) < $limit,
-        'total'     => $total,
-        'pct'       => $total > 0 ? min( 100, (int) round( $new_offset / $total * 100 ) ) : 100,
+        'processed' => count( $batch ),
+        'remaining' => $remaining,
+        'done'      => $done,
+        'total'     => $initial_total,
+        'pct'       => $pct,
     ] );
 } );
 
