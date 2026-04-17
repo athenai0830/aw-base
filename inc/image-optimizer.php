@@ -254,19 +254,21 @@ add_action( 'wp_ajax_awbase_optimize_batch', function(): void {
         'fields'         => 'ids',
     ] );
 
-    $pending = [];
+    // 未処理IDをファイルサイズ昇順で収集（小さいファイルから処理）
+    $pending_map = []; // [ id => filesize ]
     foreach ( $all_ids as $id ) {
-        // 元ファイルが存在しない孤立レコードはスキップ
         $src = get_attached_file( $id );
         if ( ! $src || ! file_exists( $src ) ) continue;
 
         foreach ( $sizes as [ $w, $h ] ) {
             if ( ! file_exists( "{$dir}/{$id}-{$w}x{$h}.jpg" ) ) {
-                $pending[] = $id;
+                $pending_map[ $id ] = filesize( $src );
                 break;
             }
         }
     }
+    asort( $pending_map ); // ファイルサイズ昇順
+    $pending = array_keys( $pending_map );
 
     // 初回リクエスト時に総未処理件数をキャッシュ（進捗率の分母に使用）
     $initial_total = (int) get_transient( 'awbase_pending_total' );
@@ -275,8 +277,9 @@ add_action( 'wp_ajax_awbase_optimize_batch', function(): void {
         set_transient( 'awbase_pending_total', $initial_total, HOUR_IN_SECONDS );
     }
 
-    // 未処理の先頭 $limit 件だけ処理
-    $batch = array_slice( $pending, 0, $limit );
+    // skip: JS側で失敗時に1ずつインクリメントして問題画像を飛ばす
+    $skip  = absint( $_POST['skip'] ?? 0 );
+    $batch = array_slice( $pending, $skip, $limit );
     foreach ( $batch as $id ) {
         foreach ( $sizes as [ $w, $h ] ) {
             awbase_generate_thumb( $id, $w, $h );

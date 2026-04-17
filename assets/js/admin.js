@@ -123,6 +123,9 @@ jQuery(document).ready(function($) {
                 .show();
         }
 
+        var awbSkip    = 0;
+        var awbRetries = 0;
+
         function awbRunBatch() {
             $.ajax({
                 url:  awbaseAdminData.ajaxUrl,
@@ -130,14 +133,17 @@ jQuery(document).ready(function($) {
                 data: {
                     action: 'awbase_optimize_batch',
                     nonce:  awbaseAdminData.optimizeNonce,
+                    skip:   awbSkip,
                 },
                 success: function( res ) {
+                    awbRetries = 0;
                     if ( ! res.success ) {
                         awbShowResult( 'エラーが発生しました。', true );
                         $optimizeBtn.prop( 'disabled', false );
                         return;
                     }
                     var d = res.data;
+                    awbSkip = 0; // 成功したらスキップリセット
                     $progressBar.css( 'width', d.pct + '%' );
                     $progressStatus.text( ( d.total - d.remaining ) + ' / ' + d.total + ' 枚処理済み（' + d.pct + '%）' );
 
@@ -154,14 +160,24 @@ jQuery(document).ready(function($) {
                     }
                 },
                 error: function() {
-                    awbShowResult( '通信エラーが発生しました。', true );
-                    $optimizeBtn.prop( 'disabled', false );
+                    awbRetries++;
+                    if ( awbRetries <= 5 ) {
+                        // 問題のある画像を1枚飛ばしてリトライ
+                        awbSkip++;
+                        $progressStatus.text( '問題のある画像をスキップして続行中...' );
+                        awbRunBatch();
+                    } else {
+                        awbShowResult( '処理を続行できません。サーバーのメモリ制限を確認してください。', true );
+                        $optimizeBtn.prop( 'disabled', false );
+                    }
                 },
             });
         }
 
         // ── 一括最適化 ────────────────────────────────────────
         $optimizeBtn.on( 'click', function() {
+            awbSkip    = 0;
+            awbRetries = 0;
             $optimizeBtn.prop( 'disabled', true );
             $resultMsg.hide();
             $progressWrap.show();
