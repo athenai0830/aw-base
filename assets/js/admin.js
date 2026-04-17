@@ -101,126 +101,107 @@ jQuery(document).ready(function($) {
     // Tab navigation (for any future use)
     // Currently handled by PHP URL params, but adding JS smooth experience
 
-});
+    // ============================================================
+    // 画像最適化タブ
+    // ============================================================
+    var $optimizeBtn = $('#awb-optimize-btn');
+    var $deleteBtn   = $('#awb-delete-btn');
 
-// ============================================================
-// 画像最適化タブ
-// ============================================================
-(function() {
-    var optimizeBtn = document.getElementById('awb-optimize-btn');
-    var deleteBtn   = document.getElementById('awb-delete-btn');
-    if ( ! optimizeBtn && ! deleteBtn ) return;
+    if ( $optimizeBtn.length || $deleteBtn.length ) {
+        var $progressWrap   = $('#awb-progress-wrap');
+        var $progressBar    = $('#awb-progress-bar');
+        var $progressStatus = $('#awb-progress-status');
+        var $resultMsg      = $('#awb-result-msg');
+        var $optimizedCount = $('#awb-optimized-count');
+        var $pendingCount   = $('#awb-pending-count');
+        var $totalCount     = $('#awb-total-count');
 
-    var progressWrap   = document.getElementById('awb-progress-wrap');
-    var progressBar    = document.getElementById('awb-progress-bar');
-    var progressStatus = document.getElementById('awb-progress-status');
-    var resultMsg      = document.getElementById('awb-result-msg');
-    var optimizedCount = document.getElementById('awb-optimized-count');
-    var pendingCount   = document.getElementById('awb-pending-count');
-    var totalCount     = document.getElementById('awb-total-count');
+        function awbShowResult( msg, isError ) {
+            $resultMsg
+                .text( msg )
+                .attr( 'class', isError ? 'is-error' : 'is-success' )
+                .show();
+        }
 
-    function showResult( msg, isError ) {
-        resultMsg.textContent = msg;
-        resultMsg.className   = isError ? 'is-error' : 'is-success';
-        resultMsg.style.display = 'block';
-    }
-
-    // ── 一括最適化 ──────────────────────────────────────────
-    if ( optimizeBtn ) {
-        optimizeBtn.addEventListener('click', async function() {
-            optimizeBtn.disabled = true;
-            resultMsg.style.display = 'none';
-            progressWrap.style.display = 'block';
-            progressBar.style.width = '0%';
-            progressStatus.textContent = '処理中...';
-
-            var offset = 0;
-            var total  = parseInt( totalCount.textContent, 10 ) || 0;
-
-            while ( true ) {
-                var body = new URLSearchParams({
+        function awbRunBatch( offset ) {
+            $.ajax({
+                url:  awbaseAdminData.ajaxUrl,
+                type: 'POST',
+                data: {
                     action: 'awbase_optimize_batch',
                     nonce:  awbaseAdminData.optimizeNonce,
                     offset: offset,
-                });
-
-                var res;
-                try {
-                    res = await fetch( awbaseAdminData.ajaxUrl, {
-                        method:  'POST',
-                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                        body:    body,
-                    } );
-                } catch ( e ) {
-                    showResult( '通信エラーが発生しました。', true );
-                    break;
-                }
-
-                var data = await res.json();
-                if ( ! data.success ) {
-                    showResult( 'エラーが発生しました。', true );
-                    break;
-                }
-
-                var d = data.data;
-                offset = d.offset;
-                if ( d.total ) total = d.total;
-
-                progressBar.style.width    = d.pct + '%';
-                progressStatus.textContent = d.offset + ' / ' + d.total + ' 枚処理済み（' + d.pct + '%）';
-
-                if ( d.done ) {
-                    progressBar.style.width    = '100%';
-                    progressStatus.textContent = '完了！ ' + d.total + ' 枚を処理しました';
-                    if ( optimizedCount ) optimizedCount.textContent = d.total + ' 枚';
-                    if ( pendingCount )   pendingCount.textContent   = '0 枚';
-                    optimizeBtn.textContent  = '最適化済み';
-                    if ( deleteBtn ) deleteBtn.disabled = false;
-                    showResult( '最適化が完了しました。', false );
-                    break;
-                }
-            }
-        });
-    }
-
-    // ── 全削除 ──────────────────────────────────────────────
-    if ( deleteBtn ) {
-        deleteBtn.addEventListener('click', async function() {
-            if ( ! confirm( 'aw-thumbs 内の生成ファイルをすべて削除します。よろしいですか？\n（元画像は削除されません）' ) ) return;
-
-            deleteBtn.disabled = true;
-            resultMsg.style.display = 'none';
-
-            var body = new URLSearchParams({
-                action: 'awbase_delete_thumbs',
-                nonce:  awbaseAdminData.deleteNonce,
-            });
-
-            try {
-                var res  = await fetch( awbaseAdminData.ajaxUrl, {
-                    method:  'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body:    body,
-                } );
-                var data = await res.json();
-                if ( data.success ) {
-                    var deleted = data.data.deleted;
-                    if ( optimizedCount ) optimizedCount.textContent = '0 枚';
-                    if ( pendingCount && totalCount ) pendingCount.textContent = totalCount.textContent;
-                    if ( optimizeBtn ) {
-                        optimizeBtn.disabled    = false;
-                        optimizeBtn.textContent = 'すべて最適化';
+                },
+                success: function( res ) {
+                    if ( ! res.success ) {
+                        awbShowResult( 'エラーが発生しました。', true );
+                        $optimizeBtn.prop( 'disabled', false );
+                        return;
                     }
-                    progressWrap.style.display = 'none';
-                    showResult( deleted + ' ファイルを削除しました。', false );
-                } else {
-                    showResult( '削除に失敗しました。', true );
-                    deleteBtn.disabled = false;
-                }
-            } catch ( e ) {
-                showResult( '通信エラーが発生しました。', true );
-                deleteBtn.disabled = false;
-            }
+                    var d = res.data;
+                    $progressBar.css( 'width', d.pct + '%' );
+                    $progressStatus.text( d.offset + ' / ' + d.total + ' 枚処理済み（' + d.pct + '%）' );
+
+                    if ( d.done ) {
+                        $progressBar.css( 'width', '100%' );
+                        $progressStatus.text( '完了！ ' + d.total + ' 枚を処理しました' );
+                        $optimizedCount.text( d.total + ' 枚' );
+                        $pendingCount.text( '0 枚' );
+                        $optimizeBtn.text( '最適化済み' );
+                        $deleteBtn.prop( 'disabled', false );
+                        awbShowResult( '最適化が完了しました。', false );
+                    } else {
+                        awbRunBatch( d.offset );
+                    }
+                },
+                error: function() {
+                    awbShowResult( '通信エラーが発生しました。', true );
+                    $optimizeBtn.prop( 'disabled', false );
+                },
+            });
+        }
+
+        // ── 一括最適化 ────────────────────────────────────────
+        $optimizeBtn.on( 'click', function() {
+            $optimizeBtn.prop( 'disabled', true );
+            $resultMsg.hide();
+            $progressWrap.show();
+            $progressBar.css( 'width', '0%' );
+            $progressStatus.text( '処理中...' );
+            awbRunBatch( 0 );
+        });
+
+        // ── 全削除 ────────────────────────────────────────────
+        $deleteBtn.on( 'click', function() {
+            if ( ! confirm( 'aw-thumbs 内の生成ファイルをすべて削除します。よろしいですか？\n（元画像は削除されません）' ) ) return;
+            $deleteBtn.prop( 'disabled', true );
+            $resultMsg.hide();
+
+            $.ajax({
+                url:  awbaseAdminData.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'awbase_delete_thumbs',
+                    nonce:  awbaseAdminData.deleteNonce,
+                },
+                success: function( res ) {
+                    if ( res.success ) {
+                        $optimizedCount.text( '0 枚' );
+                        $pendingCount.text( $totalCount.text() );
+                        $optimizeBtn.prop( 'disabled', false ).text( 'すべて最適化' );
+                        $progressWrap.hide();
+                        awbShowResult( res.data.deleted + ' ファイルを削除しました。', false );
+                    } else {
+                        awbShowResult( '削除に失敗しました。', true );
+                        $deleteBtn.prop( 'disabled', false );
+                    }
+                },
+                error: function() {
+                    awbShowResult( '通信エラーが発生しました。', true );
+                    $deleteBtn.prop( 'disabled', false );
+                },
+            });
         });
     }
-}());
+
+});
