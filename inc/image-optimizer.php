@@ -320,6 +320,6 @@ add_action( 'wp_ajax_awbase_delete_thumbs', function(): void {
         }
     }
 
-    delete_transient( 'awbase_img_total' );
+    delete_transient( 'awbase_pending_total' );
     wp_send_json_success( [ 'deleted' => $count ] );
 } );
