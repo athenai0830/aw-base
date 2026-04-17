@@ -125,11 +125,14 @@ jQuery(document).ready(function($) {
 
         var awbSkip    = 0;
         var awbRetries = 0;
+        var awbSkipped = 0;
 
         function awbRunBatch() {
             $.ajax({
-                url:  awbaseAdminData.ajaxUrl,
-                type: 'POST',
+                url:      awbaseAdminData.ajaxUrl,
+                type:     'POST',
+                dataType: 'json',
+                timeout:  30000,
                 data: {
                     action: 'awbase_optimize_batch',
                     nonce:  awbaseAdminData.optimizeNonce,
@@ -137,24 +140,37 @@ jQuery(document).ready(function($) {
                 },
                 success: function( res ) {
                     awbRetries = 0;
-                    if ( ! res.success ) {
+                    if ( ! res || ! res.success ) {
                         awbShowResult( 'エラーが発生しました。', true );
                         $optimizeBtn.prop( 'disabled', false );
                         return;
                     }
                     var d = res.data;
-                    awbSkip = 0; // 成功したらスキップリセット
+                    if ( d.processed === 0 && ! d.done ) {
+                        awbSkip    += 3;
+                        awbSkipped += 3;
+                    } else {
+                        awbSkip = 0;
+                    }
+                    var skipNote = awbSkipped > 0 ? '　スキップ: ' + awbSkipped + ' 枚' : '';
                     $progressBar.css( 'width', d.pct + '%' );
-                    $progressStatus.text( ( d.total - d.remaining ) + ' / ' + d.total + ' 枚処理済み（' + d.pct + '%）' );
+                    $progressStatus.text( ( d.total - d.remaining ) + ' / ' + d.total + ' 枚処理済み（' + d.pct + '%）' + skipNote );
 
                     if ( d.done ) {
                         $progressBar.css( 'width', '100%' );
-                        $progressStatus.text( '完了！ ' + d.total + ' 枚を最適化しました' );
-                        $optimizedCount.text( $totalCount.text() );
-                        $pendingCount.text( '0 枚' );
-                        $optimizeBtn.text( '最適化済み' );
+                        if ( awbSkipped > 0 ) {
+                            $progressStatus.text( '完了（' + awbSkipped + ' 枚をスキップ）。再試行で処理できる場合があります。' );
+                            $optimizeBtn.text( 'スキップ分を再試行' ).prop( 'disabled', false );
+                            $pendingCount.text( awbSkipped + ' 枚' );
+                            awbShowResult( awbSkipped + ' 枚がスキップされました。時間をおいて再試行してください。', false );
+                        } else {
+                            $progressStatus.text( '完了！ ' + d.total + ' 枚をすべて最適化しました' );
+                            $optimizedCount.text( $totalCount.text() );
+                            $pendingCount.text( '0 枚' );
+                            $optimizeBtn.text( '最適化済み' );
+                            awbShowResult( '最適化が完了しました。', false );
+                        }
                         $deleteBtn.prop( 'disabled', false );
-                        awbShowResult( '最適化が完了しました。', false );
                     } else {
                         awbRunBatch();
                     }
@@ -178,6 +194,7 @@ jQuery(document).ready(function($) {
         $optimizeBtn.on( 'click', function() {
             awbSkip    = 0;
             awbRetries = 0;
+            awbSkipped = 0;
             $optimizeBtn.prop( 'disabled', true );
             $resultMsg.hide();
             $progressWrap.show();

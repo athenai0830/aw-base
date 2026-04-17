@@ -237,11 +237,20 @@ add_action( 'wp_ajax_awbase_optimize_batch', function(): void {
     check_ajax_referer( 'awbase_optimize', 'nonce' );
     if ( ! current_user_can( 'manage_options' ) ) wp_die( '', '', [ 'response' => 403 ] );
 
-    set_time_limit( 120 );
+    set_time_limit( 30 );
 
     $limit = 3;
     $dir   = awbase_thumb_dir();
     $sizes = awbase_get_thumb_sizes();
+
+    // glob() で生成済みJPEGを一括取得（file_exists/stat キャッシュを使わない）
+    $done_files = [];
+    $existing = glob( $dir . '/*.jpg' );
+    if ( $existing ) {
+        foreach ( $existing as $f ) {
+            $done_files[ basename( $f ) ] = true;
+        }
+    }
 
     // 全ラスター画像IDを取得し、未処理のものだけ抽出
     $all_ids = get_posts( [
@@ -261,7 +270,7 @@ add_action( 'wp_ajax_awbase_optimize_batch', function(): void {
         if ( ! $src || ! file_exists( $src ) ) continue;
 
         foreach ( $sizes as [ $w, $h ] ) {
-            if ( ! file_exists( "{$dir}/{$id}-{$w}x{$h}.jpg" ) ) {
+            if ( ! isset( $done_files[ "{$id}-{$w}x{$h}.jpg" ] ) ) {
                 $pending_map[ $id ] = filesize( $src );
                 break;
             }
@@ -277,17 +286,34 @@ add_action( 'wp_ajax_awbase_optimize_batch', function(): void {
         set_transient( 'awbase_pending_total', $initial_total, HOUR_IN_SECONDS );
     }
 
-    // skip: JS側で失敗時に1ずつインクリメントして問題画像を飛ばす
     $skip  = absint( $_POST['skip'] ?? 0 );
     $batch = array_slice( $pending, $skip, $limit );
-    foreach ( $batch as $id ) {
-        foreach ( $sizes as [ $w, $h ] ) {
-            awbase_generate_thumb( $id, $w, $h );
-        }
+
+    // skip が pending を超えた場合は完了扱い
+    if ( empty( $batch ) ) {
+        delete_transient( 'awbase_pending_total' );
+        wp_send_json_success( [
+            'processed' => 0,
+            'remaining' => 0,
+            'done'      => true,
+            'total'     => $initial_total,
+            'pct'       => 100,
+        ] );
     }
 
-    $remaining = count( $pending ) - count( $batch );
-    $done      = $remaining === 0;
+    $processed_count = 0;
+    foreach ( $batch as $id ) {
+        $ok = true;
+        foreach ( $sizes as [ $w, $h ] ) {
+            if ( ! awbase_generate_thumb( $id, $w, $h ) ) {
+                $ok = false;
+            }
+        }
+        if ( $ok ) $processed_count++;
+    }
+
+    $remaining = count( $pending ) - $processed_count;
+    $done      = $remaining <= 0;
 
     if ( $done ) {
         delete_transient( 'awbase_pending_total' );
@@ -298,7 +324,7 @@ add_action( 'wp_ajax_awbase_optimize_batch', function(): void {
         : 100;
 
     wp_send_json_success( [
-        'processed' => count( $batch ),
+        'processed' => $processed_count,
         'remaining' => $remaining,
         'done'      => $done,
         'total'     => $initial_total,

@@ -323,7 +323,7 @@ function awbase_admin_enqueue_scripts( $hook ) {
     wp_enqueue_media();
     wp_enqueue_style( 'font-awesome', 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css', array(), '6.5.2' );
     wp_enqueue_style( 'awbase-admin-style', get_template_directory_uri() . '/assets/css/admin.css', array(), null );
-    wp_enqueue_script( 'awbase-admin-script', get_template_directory_uri() . '/assets/js/admin.js', array('jquery', 'media-editor'), null, true );
+    wp_enqueue_script( 'awbase-admin-script', get_template_directory_uri() . '/assets/js/admin.js', array('jquery', 'media-editor'), filemtime( get_template_directory() . '/assets/js/admin.js' ), true );
     wp_localize_script( 'awbase-admin-script', 'awbaseAdminData', [
         'optimizeNonce' => wp_create_nonce( 'awbase_optimize' ),
         'deleteNonce'   => wp_create_nonce( 'awbase_delete_thumbs' ),
