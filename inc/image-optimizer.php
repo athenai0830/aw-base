@@ -239,7 +239,7 @@ add_action( 'wp_ajax_awbase_optimize_batch', function(): void {
 
     set_time_limit( 120 );
 
-    $limit = 10;
+    $limit = 3;
     $dir   = awbase_thumb_dir();
     $sizes = awbase_get_thumb_sizes();
 
@@ -278,6 +278,9 @@ add_action( 'wp_ajax_awbase_optimize_batch', function(): void {
     // 未処理の先頭 $limit 件だけ処理
     $batch = array_slice( $pending, 0, $limit );
     foreach ( $batch as $id ) {
+        $src = get_attached_file( $id );
+        // 元ファイルが20MB超の場合はスキップ（メモリ不足防止）
+        if ( $src && file_exists( $src ) && filesize( $src ) > 20 * 1024 * 1024 ) continue;
         foreach ( $sizes as [ $w, $h ] ) {
             awbase_generate_thumb( $id, $w, $h );
         }
