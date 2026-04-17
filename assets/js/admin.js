@@ -123,9 +123,9 @@ jQuery(document).ready(function($) {
                 .show();
         }
 
-        var awbSkip    = 0;
-        var awbRetries = 0;
-        var awbSkipped = 0;
+        var awbSkip         = 0;
+        var awbRetries      = 0;
+        var awbBatchRetries = 0;
 
         function awbRunBatch() {
             $.ajax({
@@ -147,30 +147,41 @@ jQuery(document).ready(function($) {
                     }
                     var d = res.data;
                     if ( d.processed === 0 && ! d.done ) {
-                        awbSkip    += 3;
-                        awbSkipped += 3;
+                        awbBatchRetries++;
+                        if ( awbBatchRetries <= 5 ) {
+                            $progressStatus.text( 'リトライ中（' + awbBatchRetries + '/5）...' );
+                            awbRunBatch();
+                            return;
+                        }
+                        awbBatchRetries = 0;
+                        awbSkip += 5;
                     } else {
+                        awbBatchRetries = 0;
                         awbSkip = 0;
                     }
-                    var skipNote = awbSkipped > 0 ? '　スキップ: ' + awbSkipped + ' 枚' : '';
                     $progressBar.css( 'width', d.pct + '%' );
-                    $progressStatus.text( ( d.total - d.remaining ) + ' / ' + d.total + ' 枚処理済み（' + d.pct + '%）' + skipNote );
+                    $progressStatus.text( ( d.total - d.remaining ) + ' 枚処理済み（' + d.pct + '%）' );
 
                     if ( d.done ) {
                         $progressBar.css( 'width', '100%' );
-                        if ( awbSkipped > 0 ) {
-                            $progressStatus.text( '完了（' + awbSkipped + ' 枚をスキップ）。再試行で処理できる場合があります。' );
-                            $optimizeBtn.text( 'スキップ分を再試行' ).prop( 'disabled', false );
-                            $pendingCount.text( awbSkipped + ' 枚' );
-                            awbShowResult( awbSkipped + ' 枚がスキップされました。時間をおいて再試行してください。', false );
+                        $optimizeBtn.prop( 'disabled', false ).text( 'すべて最適化' );
+                        $deleteBtn.prop( 'disabled', false );
+
+                        if ( d.unprocessed && d.unprocessed.length > 0 ) {
+                            $progressStatus.text( '完了（未処理: ' + d.unprocessed.length + ' 枚）' );
+                            var listHtml = '<p style="margin:10px 0 4px;font-weight:600;">処理できなかった画像（' + d.unprocessed.length + ' 枚）:</p><ul style="margin:0;max-height:200px;overflow-y:auto;background:#f9f9f9;border:1px solid #ddd;padding:8px 8px 8px 24px;">';
+                            $.each( d.unprocessed, function( i, item ) {
+                                listHtml += '<li style="font-size:12px;">' + item.name + '</li>';
+                            });
+                            listHtml += '</ul>';
+                            $resultMsg.html( listHtml ).attr( 'class', '' ).show();
                         } else {
-                            $progressStatus.text( '完了！ ' + d.total + ' 枚をすべて最適化しました' );
+                            $progressStatus.text( '完了！ すべて最適化しました' );
                             $optimizedCount.text( $totalCount.text() );
                             $pendingCount.text( '0 枚' );
-                            $optimizeBtn.text( '最適化済み' );
+                            $optimizeBtn.text( '最適化済み' ).prop( 'disabled', true );
                             awbShowResult( '最適化が完了しました。', false );
                         }
-                        $deleteBtn.prop( 'disabled', false );
                     } else {
                         awbRunBatch();
                     }
@@ -192,9 +203,9 @@ jQuery(document).ready(function($) {
 
         // ── 一括最適化 ────────────────────────────────────────
         $optimizeBtn.on( 'click', function() {
-            awbSkip    = 0;
-            awbRetries = 0;
-            awbSkipped = 0;
+            awbSkip         = 0;
+            awbRetries      = 0;
+            awbBatchRetries = 0;
             $optimizeBtn.prop( 'disabled', true );
             $resultMsg.hide();
             $progressWrap.show();

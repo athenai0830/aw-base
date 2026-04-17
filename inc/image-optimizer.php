@@ -239,7 +239,7 @@ add_action( 'wp_ajax_awbase_optimize_batch', function(): void {
 
     set_time_limit( 30 );
 
-    $limit = 3;
+    $limit = 5;
     $dir   = awbase_thumb_dir();
     $sizes = awbase_get_thumb_sizes();
 
@@ -289,31 +289,33 @@ add_action( 'wp_ajax_awbase_optimize_batch', function(): void {
     $skip  = absint( $_POST['skip'] ?? 0 );
     $batch = array_slice( $pending, $skip, $limit );
 
-    // skip が pending を超えた場合は完了扱い
-    if ( empty( $batch ) ) {
-        delete_transient( 'awbase_pending_total' );
-        wp_send_json_success( [
-            'processed' => 0,
-            'remaining' => 0,
-            'done'      => true,
-            'total'     => $initial_total,
-            'pct'       => 100,
-        ] );
-    }
-
     $processed_count = 0;
-    foreach ( $batch as $id ) {
-        $ok = true;
-        foreach ( $sizes as [ $w, $h ] ) {
-            if ( ! awbase_generate_thumb( $id, $w, $h ) ) {
-                $ok = false;
+    if ( ! empty( $batch ) ) {
+        foreach ( $batch as $id ) {
+            $ok = true;
+            foreach ( $sizes as [ $w, $h ] ) {
+                if ( ! awbase_generate_thumb( $id, $w, $h ) ) {
+                    $ok = false;
+                }
             }
+            if ( $ok ) $processed_count++;
         }
-        if ( $ok ) $processed_count++;
     }
 
-    $remaining = count( $pending ) - $processed_count;
-    $done      = $remaining <= 0;
+    $remaining = empty( $batch ) ? count( $pending ) : count( $pending ) - $processed_count;
+    $done      = empty( $batch ) || $remaining <= 0;
+
+    // 未処理画像一覧（完了時のみ生成）
+    $unprocessed = [];
+    if ( $done && count( $pending ) > 0 ) {
+        foreach ( $pending as $id ) {
+            $src = get_attached_file( $id );
+            $unprocessed[] = [
+                'id'   => $id,
+                'name' => $src ? basename( $src ) : "ID:{$id}",
+            ];
+        }
+    }
 
     if ( $done ) {
         delete_transient( 'awbase_pending_total' );
@@ -324,11 +326,12 @@ add_action( 'wp_ajax_awbase_optimize_batch', function(): void {
         : 100;
 
     wp_send_json_success( [
-        'processed' => $processed_count,
-        'remaining' => $remaining,
-        'done'      => $done,
-        'total'     => $initial_total,
-        'pct'       => $pct,
+        'processed'   => $processed_count,
+        'remaining'   => $remaining,
+        'done'        => $done,
+        'total'       => $initial_total,
+        'pct'         => $pct,
+        'unprocessed' => $unprocessed,
     ] );
 } );
 
