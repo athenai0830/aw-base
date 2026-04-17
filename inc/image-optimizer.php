@@ -244,7 +244,7 @@ add_action( 'wp_ajax_awbase_optimize_batch', function(): void {
 
     $ids = get_posts( [
         'post_type'      => 'attachment',
-        'post_mime_type' => 'image',
+        'post_mime_type' => [ 'image/jpeg', 'image/png', 'image/gif', 'image/webp' ],
         'post_status'    => 'inherit',
         'posts_per_page' => $limit,
         'offset'         => $offset,
@@ -264,7 +264,7 @@ add_action( 'wp_ajax_awbase_optimize_batch', function(): void {
     if ( ! $total ) {
         $total = count( get_posts( [
             'post_type'      => 'attachment',
-            'post_mime_type' => 'image',
+            'post_mime_type' => [ 'image/jpeg', 'image/png', 'image/gif', 'image/webp' ],
             'post_status'    => 'inherit',
             'posts_per_page' => -1,
             'fields'         => 'ids',
