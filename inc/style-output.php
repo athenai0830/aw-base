@@ -152,6 +152,13 @@ function awbase_dynamic_css() {
     }
     $custom_css .= "}\n";
 
+    // Critical CSS for FV: inline selector rules so FV renders before external CSS loads on mobile
+    if ( ( is_front_page() || is_home() ) && ( $options['show_fv'] ?? '' ) === '1' ) {
+        $custom_css .= '.first-view{position:relative;height:var(--fv-height);display:flex;align-items:center;justify-content:center;overflow:hidden;}';
+        $custom_css .= '.fv-bg-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;}';
+        $custom_css .= '.fv-overlay{position:absolute;inset:0;background-color:var(--fv-overlay);z-index:2;}';
+    }
+
     $custom_css = apply_filters( 'awbase_style_output', $custom_css );
     wp_add_inline_style( 'awbase-main-style', $custom_css );
 }
