@@ -153,6 +153,6 @@ function awbase_dynamic_css() {
     $custom_css .= "}\n";
 
     $custom_css = apply_filters( 'awbase_style_output', $custom_css );
-    wp_add_inline_style( 'awbase-style', $custom_css );
+    wp_add_inline_style( 'awbase-main-style', $custom_css );
 }
 add_action( 'wp_enqueue_scripts', 'awbase_dynamic_css', 20 );
