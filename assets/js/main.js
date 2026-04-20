@@ -19,7 +19,16 @@ function awbSmoothScroll(targetY, duration) {
     requestAnimationFrame(step);
 }
 
-document.addEventListener('DOMContentLoaded', function () {
+// Flying Scripts 等による遅延実行に対応: DOMContentLoaded が既に完了していれば即実行
+function awbDOMReady(fn) {
+    if (document.readyState !== 'loading') {
+        fn();
+    } else {
+        document.addEventListener('DOMContentLoaded', fn);
+    }
+}
+
+awbDOMReady(function () {
 
     // ----------------------------------------
     // Table of Contents (TOC)

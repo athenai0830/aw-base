@@ -139,11 +139,15 @@ function awbase_picture( int $attachment_id, string $size_key, array $attrs = []
 
     // アタッチメントなし → no-image.svg
     if ( ! $attachment_id ) {
+        $loading  = esc_attr( $attrs['loading'] ?? 'lazy' );
+        $priority = ! empty( $attrs['fetchpriority'] ) ? ' fetchpriority="' . esc_attr( $attrs['fetchpriority'] ) . '"' : '';
         return sprintf(
-            '<img src="%s" alt="" width="%d" height="%d" loading="lazy" decoding="async">',
+            '<img src="%s" alt="" width="%d" height="%d" loading="%s" decoding="async"%s>',
             esc_url( get_template_directory_uri() . '/assets/img/no-image.svg' ),
             $width,
-            $height
+            $height,
+            $loading,
+            $priority
         );
     }
 
@@ -243,53 +247,61 @@ add_action( 'wp_ajax_awbase_optimize_batch', function(): void {
     $dir   = awbase_thumb_dir();
     $sizes = awbase_get_thumb_sizes();
 
-    // glob() で生成済みJPEGを一括取得（file_exists/stat キャッシュを使わない）
-    $done_files = [];
-    $existing = glob( $dir . '/*.jpg' );
-    if ( $existing ) {
-        foreach ( $existing as $f ) {
-            $done_files[ basename( $f ) ] = true;
-        }
-    }
-
-    // 全ラスター画像IDを取得し、未処理のものだけ抽出
-    $all_ids = get_posts( [
-        'post_type'      => 'attachment',
-        'post_mime_type' => [ 'image/jpeg', 'image/png', 'image/gif', 'image/webp' ],
-        'post_status'    => 'inherit',
-        'posts_per_page' => -1,
-        'orderby'        => 'ID',
-        'order'          => 'ASC',
-        'fields'         => 'ids',
-    ] );
-
-    // 未処理IDをファイルサイズ昇順で収集（小さいファイルから処理）
-    $pending_map = []; // [ id => filesize ]
-    foreach ( $all_ids as $id ) {
-        $src = get_attached_file( $id );
-        if ( ! $src || ! file_exists( $src ) ) continue;
-
-        foreach ( $sizes as [ $w, $h ] ) {
-            if ( ! isset( $done_files[ "{$id}-{$w}x{$h}.jpg" ] ) ) {
-                $pending_map[ $id ] = filesize( $src );
-                break;
+    if ( isset( $_POST['init'] ) && $_POST['init'] === '1' ) {
+        // 初回呼び出し：キューの構築（O(N) 走査を1度だけ行う）
+        $done_files = [];
+        $existing = glob( $dir . '/*.jpg' );
+        if ( $existing ) {
+            foreach ( $existing as $f ) {
+                $done_files[ basename( $f ) ] = true;
             }
         }
-    }
-    asort( $pending_map ); // ファイルサイズ昇順
-    $pending = array_keys( $pending_map );
 
-    // 初回リクエスト時に総未処理件数をキャッシュ（進捗率の分母に使用）
-    $initial_total = (int) get_transient( 'awbase_pending_total' );
-    if ( ! $initial_total ) {
-        $initial_total = count( $pending );
-        set_transient( 'awbase_pending_total', $initial_total, HOUR_IN_SECONDS );
+        $all_ids = get_posts( [
+            'post_type'      => 'attachment',
+            'post_mime_type' => [ 'image/jpeg', 'image/png', 'image/gif', 'image/webp' ],
+            'post_status'    => 'inherit',
+            'posts_per_page' => -1,
+            'orderby'        => 'ID',
+            'order'          => 'ASC',
+            'fields'         => 'ids',
+        ] );
+
+        $pending = [];
+        foreach ( $all_ids as $id ) {
+            // ここでの filesize チェックは重いため行わない
+            foreach ( $sizes as [ $w, $h ] ) {
+                if ( ! isset( $done_files[ "{$id}-{$w}x{$h}.jpg" ] ) ) {
+                    $pending[] = $id;
+                    break;
+                }
+            }
+        }
+
+        $total = count( $pending );
+        set_transient( 'awbase_opt_queue', $pending, 2 * HOUR_IN_SECONDS );
+        set_transient( 'awbase_opt_total', $total, 2 * HOUR_IN_SECONDS );
+        delete_transient( 'awbase_opt_failed' );
+
+        wp_send_json_success( [
+            'ready' => true,
+            'total' => $total,
+        ] );
     }
 
-    $skip  = absint( $_POST['skip'] ?? 0 );
-    $batch = array_slice( $pending, $skip, $limit );
+    // 2回目以降：キューから取り出して処理
+    $queue = get_transient( 'awbase_opt_queue' );
+    if ( ! is_array( $queue ) ) $queue = [];
+
+    $batch = array_splice( $queue, 0, $limit );
+
+    // OOM（メモリ不足）対策：処理前にキューを保存してしまう
+    // 処理中に落ちても、このバッチは次回のキューに含まれない
+    set_transient( 'awbase_opt_queue', $queue, 2 * HOUR_IN_SECONDS );
 
     $processed_count = 0;
+    $failed = [];
+
     if ( ! empty( $batch ) ) {
         foreach ( $batch as $id ) {
             $ok = true;
@@ -298,26 +310,37 @@ add_action( 'wp_ajax_awbase_optimize_batch', function(): void {
                     $ok = false;
                 }
             }
-            if ( $ok ) $processed_count++;
+            if ( $ok ) {
+                $processed_count++;
+            } else {
+                $failed[] = $id;
+            }
         }
     }
 
-    $remaining = empty( $batch ) ? count( $pending ) : count( $pending ) - $processed_count;
-    $done      = empty( $batch ) || $remaining <= 0;
+    if ( ! empty( $failed ) ) {
+        $old_failed = get_transient( 'awbase_opt_failed' ) ?: [];
+        set_transient( 'awbase_opt_failed', array_merge( $old_failed, $failed ), 2 * HOUR_IN_SECONDS );
+    }
 
-    // 未処理画像一覧（完了時のみ生成）
+    $remaining = count( $queue );
+    $done      = $remaining === 0;
+    $initial_total = (int) get_transient( 'awbase_opt_total' );
+
     $unprocessed = [];
-    if ( $done && count( $pending ) > 0 ) {
-        foreach ( $pending as $id ) {
-            $src = get_attached_file( $id );
+    if ( $done ) {
+        $all_failed = get_transient( 'awbase_opt_failed' ) ?: [];
+        foreach ( $all_failed as $fid ) {
+            $src = get_attached_file( $fid );
             $unprocessed[] = [
-                'id'   => $id,
-                'name' => $src ? basename( $src ) : "ID:{$id}",
+                'id'   => $fid,
+                'name' => $src ? basename( $src ) : "ID:{$fid}",
             ];
         }
-    }
-
-    if ( $done ) {
+        delete_transient( 'awbase_opt_queue' );
+        delete_transient( 'awbase_opt_total' );
+        delete_transient( 'awbase_opt_failed' );
+        // 古い実装用の互換削除
         delete_transient( 'awbase_pending_total' );
     }
 

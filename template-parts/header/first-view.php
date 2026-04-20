@@ -4,9 +4,6 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
 $options = awbase_get_settings();
 
-$bg_image_url = ! empty($options['fv_bg_image']) ? esc_url($options['fv_bg_image']) : '';
-$bg_style = $bg_image_url ? esc_attr( 'background-image: url(' . $bg_image_url . ');' ) : '';
-
 $dot_class = $options['fv_dot_pattern'] == '1' ? 'fv-dot-pattern' : '';
 
 // FV logo size style
@@ -22,8 +19,25 @@ if ( $fv_logo_h > 0 ) {
     $fv_logo_style .= 'height:auto;';
 }
 $fv_logo_url = ! empty($options['fv_logo_url']) ? esc_url($options['fv_logo_url']) : '';
+
+// FV bg image size resolution
+$fv_bg_w = '';
+$fv_bg_h = '';
+if ( ! empty($options['fv_bg_image']) ) {
+    $attachment_id = attachment_url_to_postid( $options['fv_bg_image'] );
+    if ( $attachment_id ) {
+        $img_src = wp_get_attachment_image_src( $attachment_id, 'full' );
+        if ( $img_src ) {
+            $fv_bg_w = $img_src[1];
+            $fv_bg_h = $img_src[2];
+        }
+    }
+}
 ?>
-<div class="first-view <?php echo esc_attr($dot_class); ?>" style="<?php echo $bg_style; ?>">
+<div class="first-view <?php echo esc_attr($dot_class); ?>">
+    <?php if ( ! empty($options['fv_bg_image']) ) : ?>
+        <img class="fv-bg-img skip-lazy no-lazy" src="<?php echo esc_url($options['fv_bg_image']); ?>" alt="" fetchpriority="high" loading="eager" decoding="async" data-no-lazy="1" <?php echo $fv_bg_w ? 'width="' . esc_attr($fv_bg_w) . '"' : ''; ?> <?php echo $fv_bg_h ? 'height="' . esc_attr($fv_bg_h) . '"' : ''; ?>>
+    <?php endif; ?>
     <div class="fv-overlay"></div>
     <div class="fv-content">
         <?php if ( ! empty($options['fv_logo_image']) ) :

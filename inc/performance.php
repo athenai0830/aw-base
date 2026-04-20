@@ -202,10 +202,34 @@ add_action( 'wp_head', function() {
 }, 1 );
 
 // ============================================================
-// 16. LCP 対策: ロゴ画像（アーカイブ・カテゴリー等）
+// 16. LCP 対策: アーカイブ・ホーム（最初のカードのサムネイル + ロゴ）
 // ============================================================
 add_action( 'wp_head', function() {
     if ( is_singular() ) return;
+    // 最初の投稿サムネイルをpreload（アーカイブLCP対策）
+    $posts = $GLOBALS['wp_query']->posts ?? [];
+    if ( ! empty( $posts ) ) {
+        $first_id = ! empty( $posts[0]->ID ) ? (int) $posts[0]->ID : 0;
+        if ( $first_id ) {
+            $thumb_id = get_post_thumbnail_id( $first_id );
+            if ( $thumb_id ) {
+                $sizes = awbase_get_thumb_sizes();
+                [ $w, $h ] = $sizes['awbase-card'];
+                $urls = awbase_get_thumb_urls( $thumb_id, $w, $h );
+                if ( ! empty( $urls['webp'] ) ) {
+                    echo '<link rel="preload" as="image" href="' . esc_url( $urls['webp'] ) . '" fetchpriority="high">' . "\n";
+                } elseif ( ! empty( $urls['jpeg'] ) ) {
+                    echo '<link rel="preload" as="image" href="' . esc_url( $urls['jpeg'] ) . '" fetchpriority="high">' . "\n";
+                } else {
+                    $orig = wp_get_attachment_image_src( $thumb_id, 'full' );
+                    if ( $orig ) {
+                        echo '<link rel="preload" as="image" href="' . esc_url( $orig[0] ) . '" fetchpriority="high">' . "\n";
+                    }
+                }
+            }
+        }
+    }
+    // ロゴをpreload
     $logo = get_awbase_option( 'logo_image' );
     if ( ! empty( $logo ) ) {
         echo '<link rel="preload" as="image" href="' . esc_url( $logo ) . '">' . "\n";

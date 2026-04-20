@@ -123,9 +123,40 @@ jQuery(document).ready(function($) {
                 .show();
         }
 
-        var awbSkip         = 0;
-        var awbRetries      = 0;
-        var awbBatchRetries = 0;
+        var awbRetries = 0;
+
+        function awbInitBatch() {
+            $.ajax({
+                url:      awbaseAdminData.ajaxUrl,
+                type:     'POST',
+                dataType: 'json',
+                timeout:  30000,
+                data: {
+                    action: 'awbase_optimize_batch',
+                    nonce:  awbaseAdminData.optimizeNonce,
+                    init:   '1',
+                },
+                success: function( res ) {
+                    if ( ! res || ! res.success ) {
+                        awbShowResult( '初期化に失敗しました。', true );
+                        $optimizeBtn.prop( 'disabled', false );
+                        return;
+                    }
+                    $progressStatus.text( '処理対象: ' + res.data.total + ' 枚...' );
+                    if ( res.data.total > 0 ) {
+                        awbRunBatch();
+                    } else {
+                        $progressBar.css( 'width', '100%' );
+                        $progressStatus.text( '最適化すべき画像はありませんでした' );
+                        $optimizeBtn.text( '最適化済み' ).prop( 'disabled', true );
+                    }
+                },
+                error: function() {
+                    awbShowResult( '初期化処理でエラーが発生しました。', true );
+                    $optimizeBtn.prop( 'disabled', false );
+                }
+            });
+        }
 
         function awbRunBatch() {
             $.ajax({
@@ -136,7 +167,6 @@ jQuery(document).ready(function($) {
                 data: {
                     action: 'awbase_optimize_batch',
                     nonce:  awbaseAdminData.optimizeNonce,
-                    skip:   awbSkip,
                 },
                 success: function( res ) {
                     awbRetries = 0;
@@ -146,19 +176,7 @@ jQuery(document).ready(function($) {
                         return;
                     }
                     var d = res.data;
-                    if ( d.processed === 0 && ! d.done ) {
-                        awbBatchRetries++;
-                        if ( awbBatchRetries <= 5 ) {
-                            $progressStatus.text( 'リトライ中（' + awbBatchRetries + '/5）...' );
-                            awbRunBatch();
-                            return;
-                        }
-                        awbBatchRetries = 0;
-                        awbSkip += 5;
-                    } else {
-                        awbBatchRetries = 0;
-                        awbSkip = 0;
-                    }
+                    
                     $progressBar.css( 'width', d.pct + '%' );
                     $progressStatus.text( ( d.total - d.remaining ) + ' 枚処理済み（' + d.pct + '%）' );
 
@@ -188,13 +206,13 @@ jQuery(document).ready(function($) {
                 },
                 error: function() {
                     awbRetries++;
-                    if ( awbRetries <= 5 ) {
-                        // 問題のある画像を1枚飛ばしてリトライ
-                        awbSkip++;
-                        $progressStatus.text( '問題のある画像をスキップして続行中...' );
+                    if ( awbRetries <= 10 ) {
+                        // サーバー側でOOMが起きても対象の画像は既にキューから取り除かれているため、
+                        // 再度リクエストを送れば次の画像から処理が再開されます。
+                        $progressStatus.text( 'サーバーエラー発生。復旧中...（' + awbRetries + '/10）' );
                         awbRunBatch();
                     } else {
-                        awbShowResult( '処理を続行できません。サーバーのメモリ制限を確認してください。', true );
+                        awbShowResult( '処理を続行できません。サーバーエラーが連続して発生しました。', true );
                         $optimizeBtn.prop( 'disabled', false );
                     }
                 },
@@ -203,15 +221,13 @@ jQuery(document).ready(function($) {
 
         // ── 一括最適化 ────────────────────────────────────────
         $optimizeBtn.on( 'click', function() {
-            awbSkip         = 0;
-            awbRetries      = 0;
-            awbBatchRetries = 0;
+            awbRetries = 0;
             $optimizeBtn.prop( 'disabled', true );
             $resultMsg.hide();
             $progressWrap.show();
             $progressBar.css( 'width', '0%' );
-            $progressStatus.text( '処理中...' );
-            awbRunBatch();
+            $progressStatus.text( 'キューを準備中...' );
+            awbInitBatch();
         });
 
         // ── 全削除 ────────────────────────────────────────────

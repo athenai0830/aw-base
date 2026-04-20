@@ -469,20 +469,26 @@ body.home.layout-1c .site-main-wrap {
 .first-view {
   position: relative;
   height: var(--fv-height);
-  background-size: cover;
-  background-position: center center;
-  background-repeat: no-repeat;
-  background-attachment: scroll;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
 }
 
+.fv-bg-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 1;
+}
+
 .fv-overlay {
   position: absolute;
   inset: 0;
   background-color: var(--fv-overlay);
+  z-index: 2;
 }
 
 /* Dot pattern overlay */
