@@ -162,15 +162,7 @@ add_action( 'wp_head', function() {
     echo '<link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">' . "\n";
 }, 1 );
 
-// ============================================================
-// 13. Font Awesome webfont を preload（FOIT 解消）
-// ============================================================
-add_action( 'wp_head', function() {
-    $base = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/webfonts/';
-    echo '<link rel="preload" href="' . $base . 'fa-solid-900.woff2" as="font" type="font/woff2" crossorigin>' . "\n";
-    echo '<link rel="preload" href="' . $base . 'fa-regular-400.woff2" as="font" type="font/woff2" crossorigin>' . "\n";
-    echo '<link rel="preload" href="' . $base . 'fa-brands-400.woff2" as="font" type="font/woff2" crossorigin>' . "\n";
-}, 2 );
+// 13. Font Awesome webfont preload は削除（FV 画像との帯域競合でモバイル LCP を阻害するため）
 
 // ============================================================
 // 14. LCP 対策: FV 背景画像・FV ロゴ画像（TOPページ）
