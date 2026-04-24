@@ -267,3 +267,68 @@ function awbase_get_layout() {
     ];
     return $cache;
 }
+
+// ---------------------------------------------------------------------------
+// メニュー項目でショートコードを有効化（<a>タグの二重問題を回避）
+// ---------------------------------------------------------------------------
+add_filter( 'walker_nav_menu_start_el', function( $item_output, $item, $depth, $args ) {
+    $title = trim( $item->title );
+    // ラベル全体がショートコードのみ（ `[` で始まり `]` で終わる ）の場合
+    if ( preg_match( '/^\[.+\]$/s', $title ) ) {
+        // WordPressが自動生成した <a> タグを破棄し、ショートコードの実行結果だけを <li> の直下に出力する
+        return do_shortcode( $title );
+    }
+    // それ以外（テキストの一部にショートコードが含まれる場合など）は、既存の <a> タグ出力の中で展開
+    return do_shortcode( $item_output );
+}, 10, 4 );
+
+// ---------------------------------------------------------------------------
+// メニュー設定画面に「ショートコード利用可能」の案内を追加
+// ---------------------------------------------------------------------------
+function awbase_add_menu_shortcode_notice_css() {
+    ?>
+    <style>
+    /* --------------------------------------
+       リンク文字列（ナビゲーションラベル）用
+       -------------------------------------- */
+    /* 外観 > メニュー: カスタムリンク追加の「リンク文字列」 */
+    #customlinkdiv #menu-item-name-wrap label::after,
+    /* 外観 > メニュー: 既に追加されたメニュー項目の「ナビゲーションラベル」 */
+    .menu-item-settings .field-title label::after,
+    /* カスタマイザー: 左パネルのカスタムリンク追加 */
+    #available-menu-items-customlink .custom-menu-item-name-wrap label::after,
+    #available-menu-items-customlink #customlinkdiv #menu-item-name-wrap label::after,
+    /* カスタマイザー: 既に追加された項目の「ナビゲーションラベル」 */
+    .customize-control-nav_menu_item .field-title label::after {
+        content: "※ショートコードの利用可能";
+        display: block;
+        font-size: 11px;
+        color: #d63638;
+        margin-top: 4px;
+        font-weight: normal;
+    }
+
+    /* --------------------------------------
+       URL欄用（ショートコード配置時のダミーURL案内）
+       -------------------------------------- */
+    /* 外観 > メニュー: カスタムリンク追加の「URL」 */
+    #customlinkdiv #menu-item-url-wrap label::after,
+    /* 外観 > メニュー: 既に追加されたメニュー項目の「URL」 */
+    .menu-item-settings .field-url label::after,
+    /* カスタマイザー: 左パネルのカスタムリンク追加 */
+    #available-menu-items-customlink .custom-menu-item-url-wrap label::after,
+    #available-menu-items-customlink #customlinkdiv #menu-item-url-wrap label::after,
+    /* カスタマイザー: 既に追加された項目の「URL」 */
+    .customize-control-nav_menu_item .field-url label::after {
+        content: "※ショートコード配置時は「#」を入力してください";
+        display: block;
+        font-size: 11px;
+        color: #d63638;
+        margin-top: 4px;
+        font-weight: normal;
+    }
+    </style>
+    <?php
+}
+add_action( 'admin_print_styles-nav-menus.php', 'awbase_add_menu_shortcode_notice_css' );
+add_action( 'customize_controls_print_styles', 'awbase_add_menu_shortcode_notice_css' );
