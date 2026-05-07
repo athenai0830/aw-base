@@ -197,19 +197,36 @@ function awbase_output_seo_meta_tags() {
     }
 
     // --- OGP Output ---
-    $og_url    = is_singular() ? get_permalink() : ( is_front_page() ? home_url('/') : ( (is_category() || is_tag() || is_tax()) ? get_term_link( get_queried_object_id() ) : '' ) );
-    $og_type   = ( is_front_page() || is_home() ) ? 'website' : 'article';
-    $site_name = get_bloginfo('name');
-    $og_image  = '';
+    $og_url  = is_singular() ? get_permalink() : ( is_front_page() ? home_url('/') : ( ( is_category() || is_tag() || is_tax() ) ? get_term_link( get_queried_object_id() ) : '' ) );
+    $og_type = is_singular( 'post' ) ? 'article' : 'website';
+
+    $site_name = get_bloginfo( 'name' );
+
+    // og:locale — WordPress locale を OGP 形式に変換
+    $wp_locale = get_locale();
+    $og_locale = str_replace( '-', '_', $wp_locale );
+    if ( strlen( $og_locale ) === 2 ) {
+        $locale_map = [ 'ja' => 'ja_JP', 'ko' => 'ko_KR', 'zh' => 'zh_CN' ];
+        $og_locale  = $locale_map[ $og_locale ] ?? $og_locale;
+    }
+
+    $og_image        = '';
+    $og_image_width  = 0;
+    $og_image_height = 0;
+    $og_image_type   = '';
 
     if ( is_singular() ) {
         $og_post_id = get_queried_object_id();
         if ( $og_post_id && has_post_thumbnail( $og_post_id ) ) {
             $img = wp_get_attachment_image_src( get_post_thumbnail_id( $og_post_id ), 'full' );
-            if ( $img ) $og_image = $img[0];
+            if ( $img ) {
+                $og_image        = $img[0];
+                $og_image_width  = (int) $img[1];
+                $og_image_height = (int) $img[2];
+            }
         }
     }
-    if ( empty($og_image) ) {
+    if ( empty( $og_image ) ) {
         if ( ( is_front_page() || is_home() ) && ! empty( $options['fv_bg_image'] ) ) {
             $og_image = $options['fv_bg_image'];
         } elseif ( ! empty( $options['schema_og_image'] ) ) {
@@ -219,19 +236,54 @@ function awbase_output_seo_meta_tags() {
         }
     }
 
-    echo '<meta property="og:title" content="' . esc_attr( $title ? $title : $site_name ) . '">' . "\n";
+    // 画像の MIME type を URL の拡張子から取得
+    if ( $og_image ) {
+        $ext      = strtolower( pathinfo( parse_url( $og_image, PHP_URL_PATH ), PATHINFO_EXTENSION ) );
+        $mime_map = [ 'jpg' => 'image/jpeg', 'jpeg' => 'image/jpeg', 'png' => 'image/png', 'gif' => 'image/gif', 'webp' => 'image/webp' ];
+        $og_image_type = $mime_map[ $ext ] ?? '';
+    }
+
+    $og_title = $title ? $title : $site_name;
+    $og_desc  = ! empty( $desc ) ? esc_attr( wp_strip_all_tags( $desc ) ) : '';
+
+    // OGP 基本タグ
+    echo '<meta property="og:locale" content="' . esc_attr( $og_locale ) . '">' . "\n";
+    echo '<meta property="og:title" content="' . esc_attr( $og_title ) . '">' . "\n";
     echo '<meta property="og:type" content="' . esc_attr( $og_type ) . '">' . "\n";
     if ( $og_url ) {
         echo '<meta property="og:url" content="' . esc_url( $og_url ) . '">' . "\n";
     }
     if ( $og_image ) {
         echo '<meta property="og:image" content="' . esc_url( $og_image ) . '">' . "\n";
+        echo '<meta property="og:image:secure_url" content="' . esc_url( $og_image ) . '">' . "\n";
+        if ( $og_image_width && $og_image_height ) {
+            echo '<meta property="og:image:width" content="' . esc_attr( $og_image_width ) . '">' . "\n";
+            echo '<meta property="og:image:height" content="' . esc_attr( $og_image_height ) . '">' . "\n";
+        }
+        if ( $og_image_type ) {
+            echo '<meta property="og:image:type" content="' . esc_attr( $og_image_type ) . '">' . "\n";
+        }
     }
     echo '<meta property="og:site_name" content="' . esc_attr( $site_name ) . '">' . "\n";
-    if ( !empty($desc) ) {
-        echo '<meta property="og:description" content="' . esc_attr( wp_strip_all_tags($desc) ) . '">' . "\n";
+    if ( $og_desc ) {
+        echo '<meta property="og:description" content="' . $og_desc . '">' . "\n";
     }
-    echo '<meta name="twitter:card" content="' . ( empty($og_image) ? 'summary' : 'summary_large_image' ) . '">' . "\n";
+
+    // 投稿ページの article メタ（Facebook 等が参照）
+    if ( is_singular( 'post' ) ) {
+        echo '<meta property="article:published_time" content="' . esc_attr( get_the_date( 'c' ) ) . '">' . "\n";
+        echo '<meta property="article:modified_time" content="' . esc_attr( get_the_modified_date( 'c' ) ) . '">' . "\n";
+    }
+
+    // Twitter / X Card
+    echo '<meta name="twitter:card" content="' . ( $og_image ? 'summary_large_image' : 'summary' ) . '">' . "\n";
+    echo '<meta name="twitter:title" content="' . esc_attr( $og_title ) . '">' . "\n";
+    if ( $og_desc ) {
+        echo '<meta name="twitter:description" content="' . $og_desc . '">' . "\n";
+    }
+    if ( $og_image ) {
+        echo '<meta name="twitter:image" content="' . esc_url( $og_image ) . '">' . "\n";
+    }
 }
 add_action( 'wp_head', 'awbase_output_seo_meta_tags', 2 );
 
