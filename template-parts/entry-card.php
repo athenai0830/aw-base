@@ -26,13 +26,13 @@ $cat_id     = ! empty( $categories ) ? $categories[0]->term_id : 0;
         <div class="entry-card-content">
             <h3 class="entry-card-title"><?php the_title(); ?></h3>
             <div class="entry-card-meta">
-                <span class="post-date"><i class="fa-regular fa-clock"></i> <time datetime="<?php echo get_the_date( 'Y-m-d' ); ?>"><?php echo get_the_date(); ?></time></span>
+                <span class="post-date"><i class="fa-regular fa-clock"></i> <time datetime="<?php echo esc_attr( get_the_date( 'Y-m-d' ) ); ?>"><?php echo esc_html( get_the_date() ); ?></time></span>
                 <?php if ( get_the_modified_date( 'Ymd' ) > get_the_date( 'Ymd' ) ) : ?>
-                    <span class="post-update"><i class="fa-solid fa-rotate-right"></i> <time datetime="<?php echo get_the_modified_date( 'Y-m-d' ); ?>"><?php echo get_the_modified_date(); ?></time></span>
+                    <span class="post-update"><i class="fa-solid fa-rotate-right"></i> <time datetime="<?php echo esc_attr( get_the_modified_date( 'Y-m-d' ) ); ?>"><?php echo esc_html( get_the_modified_date() ); ?></time></span>
                 <?php endif; ?>
             </div>
             <div class="entry-card-snippet">
-                <?php echo wp_trim_words( get_the_excerpt(), 40, '...' ); ?>
+                <?php echo wp_kses_post( wpautop( wp_trim_words( get_the_excerpt(), 40, '...' ) ) ); ?>
             </div>
         </div>
     </a>

@@ -45,7 +45,7 @@ if ( $hide_reading_time !== '1' ) {
                     <meta itemprop="dateModified" content="<?php echo esc_attr( get_the_modified_date('c') ); ?>">
                 <?php endif; ?>
                 <?php
-                $options_s      = get_option( 'awbase_settings', awbase_get_default_settings() );
+                $options_s      = awbase_get_settings();
                 $s_author_name  = ! empty( $options_s['schema_author_name'] )    ? $options_s['schema_author_name']    : get_the_author();
                 $s_author_alt   = ! empty( $options_s['schema_author_altname'] ) ? $options_s['schema_author_altname'] : '';
                 $s_author_url   = ! empty( $options_s['schema_author_url'] )     ? $options_s['schema_author_url']     : get_author_posts_url( get_the_author_meta('ID') );
@@ -108,7 +108,7 @@ if ( $hide_reading_time !== '1' ) {
         <?php endif; ?>
 
         <?php
-        $sns_opts = get_option( 'awbase_settings', awbase_get_default_settings() );
+        $sns_opts = awbase_get_settings();
         if ( ! empty( $sns_opts['sns_share_below_eyecatch'] ) && $sns_opts['sns_share_below_eyecatch'] == '1' ) {
             get_template_part( 'template-parts/sns-share' );
         }

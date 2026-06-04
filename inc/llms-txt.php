@@ -57,7 +57,7 @@ function awbase_increment_file_access( $file_key ) {
 // Output handlers
 // ---------------------------------------------------------------------------
 function awbase_llms_txt_output() {
-    $options = get_option( 'awbase_settings', awbase_get_default_settings() );
+    $options = awbase_get_settings();
 
     $is_llms      = get_query_var( 'awbase_llms_txt' )      === '1';
     $is_llms_full = get_query_var( 'awbase_llms_full_txt' ) === '1';
@@ -207,7 +207,7 @@ add_action( 'after_switch_theme', 'awbase_generate_llms_full_content' );
 
 // 管理画面訪問時にキャッシュが存在しなければ自動生成（テーマ更新後の初回起動に対応）
 add_action( 'admin_init', function() {
-    $opts = get_option( 'awbase_settings', [] );
+    $opts = awbase_get_settings();
     if ( ! empty( $opts['llms_full_txt_enable'] ) && $opts['llms_full_txt_enable'] === '1' ) {
         if ( get_transient( 'awbase_llms_full_txt' ) === false ) {
             awbase_generate_llms_full_content();

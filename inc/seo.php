@@ -128,7 +128,7 @@ add_action( 'create_post_tag', 'awbase_save_taxonomy_custom_meta', 10, 2 );
 
 // 2.5 Output favicon in wp_head
 function awbase_output_favicon() {
-    $options     = get_option( 'awbase_settings', [] );
+    $options     = awbase_get_settings();
     $favicon_url = $options['favicon_url'] ?? '';
     if ( empty( $favicon_url ) ) return;
     $url = esc_url( $favicon_url );

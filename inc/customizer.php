@@ -33,7 +33,7 @@ function awbase_customize_register( $wp_customize ) {
     ) );
     $wp_customize->add_control( 'awbase_color_pattern', array(
         'label'    => 'カラーパターン',
-        'section  ' => 'awbase_general_section',
+        'section' => 'awbase_general_section',
         'settings' => 'awbase_settings[color_pattern]',
         'type'     => 'select',
         'choices'  => array(
@@ -55,7 +55,7 @@ function awbase_customize_register( $wp_customize ) {
     ) );
     $wp_customize->add_control( 'awbase_font_family', array(
         'label'    => 'フォントファミリー',
-        'section  ' => 'awbase_general_section',
+        'section' => 'awbase_general_section',
         'settings' => 'awbase_settings[font_family]',
         'type'     => 'select',
         'choices'  => array(
@@ -74,7 +74,7 @@ function awbase_customize_register( $wp_customize ) {
     ) );
     $wp_customize->add_control( 'awbase_columns', array(
         'label'    => 'カラムレイアウト',
-        'section  ' => 'awbase_general_section',
+        'section' => 'awbase_general_section',
         'settings' => 'awbase_settings[columns]',
         'type'     => 'radio',
         'choices'  => array(

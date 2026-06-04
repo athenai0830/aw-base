@@ -469,6 +469,29 @@ add_shortcode( 'button', 'awbase_btn_shortcode' ); // エイリアス
 // ============================================================
 
 /**
+ * SSRF（Server-Side Request Forgery）対策: URLの妥当性をチェック
+ * プライベートIP・ループバック・リンクローカルアドレスをブロック
+ */
+function awbase_is_safe_url( $url ) {
+    $parsed = wp_parse_url( $url );
+    if ( ! in_array( $parsed['scheme'] ?? '', [ 'http', 'https' ], true ) ) {
+        return false;
+    }
+    $host = $parsed['host'] ?? '';
+    if ( empty( $host ) ) {
+        return false;
+    }
+    $ip = filter_var( $host, FILTER_VALIDATE_IP );
+    if ( $ip ) {
+        if ( filter_var( $ip, FILTER_VALIDATE_IP,
+            FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE ) === false ) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/**
  * 外部URLのOGPメタデータ（タイトル・説明・OG画像）を取得してキャッシュする。
  * transient で24時間キャッシュし、取得失敗時は1時間後に再試行する。
  *
@@ -478,6 +501,10 @@ add_shortcode( 'button', 'awbase_btn_shortcode' ); // エイリアス
  *  3. タイムアウト 10 秒
  */
 function awbase_fetch_ogp( $url ) {
+    // SSRF対策: プライベートIP等をブロック
+    if ( ! awbase_is_safe_url( $url ) ) {
+        return [ 'title' => '', 'description' => '', 'image' => '' ];
+    }
     $cache_key = 'awbase_ogp_' . md5( $url );
     $cached    = get_transient( $cache_key );
     
@@ -495,13 +522,13 @@ function awbase_fetch_ogp( $url ) {
         'headers'    => array( 'Accept-Language' => 'ja,en;q=0.9' ),
     );
 
-    // ローカル環境等の Basic 認証を透過的に引き継ぐ
-    if ( isset( $_SERVER['PHP_AUTH_USER'] ) && isset( $_SERVER['PHP_AUTH_PW'] ) ) {
-        $user = sanitize_text_field( wp_unslash( $_SERVER['PHP_AUTH_USER'] ) );
-        $pass = sanitize_text_field( wp_unslash( $_SERVER['PHP_AUTH_PW'] ) );
-        $args['headers']['Authorization'] = 'Basic ' . base64_encode( $user . ':' . $pass );
-    } elseif ( isset( $_SERVER['HTTP_AUTHORIZATION'] ) ) {
-        $args['headers']['Authorization'] = sanitize_text_field( wp_unslash( $_SERVER['HTTP_AUTHORIZATION'] ) );
+    // ローカル環境等の Basic 認証を透過的に引き継ぐ（本番環境では無効）
+    if ( wp_get_environment_type() === 'local' ) {
+        if ( isset( $_SERVER['PHP_AUTH_USER'] ) && isset( $_SERVER['PHP_AUTH_PW'] ) ) {
+            $user = sanitize_text_field( wp_unslash( $_SERVER['PHP_AUTH_USER'] ) );
+            $pass = sanitize_text_field( wp_unslash( $_SERVER['PHP_AUTH_PW'] ) );
+            $args['headers']['Authorization'] = 'Basic ' . base64_encode( $user . ':' . $pass );
+        }
     }
 
     $response = wp_remote_get( $url, $args );
@@ -748,14 +775,20 @@ function awbase_rest_blogcard( WP_REST_Request $request ) {
 //    [/faq]
 // ============================================================
 function awbase_faq_shortcode( $atts, $content = null ) {
-    // FAQ専用グローバル変数を初期化
-    global $awbase_faq_items;
-    $awbase_faq_items = array();
+    // FAQ専用グローバル変数を初期化（一意のIDで分離して複数ブロック対応）
+    static $faq_registry = array();
+    $faq_id = 'faq_' . uniqid();
+    $faq_registry[ $faq_id ] = array();
+
+    // この [faq] ブロック内の [faq_item] データを取得するための一時的な変数を設定
+    global $awbase_faq_current_id;
+    $awbase_faq_current_id = $faq_id;
+    $GLOBALS['awbase_faq_registry'] = &$faq_registry;
 
     // 内部のfaq_itemを処理
     do_shortcode( $content );
 
-    $items = $awbase_faq_items;
+    $items = $faq_registry[ $faq_id ];
 
     ob_start();
     echo '<div class="awb-faq">';
@@ -796,13 +829,17 @@ function awbase_faq_shortcode( $atts, $content = null ) {
 add_shortcode( 'faq', 'awbase_faq_shortcode' );
 
 function awbase_faq_item_shortcode( $atts, $content = null ) {
-    global $awbase_faq_items;
+    global $awbase_faq_current_id;
+    $faq_registry = $GLOBALS['awbase_faq_registry'] ?? array();
+    $faq_id = $awbase_faq_current_id ?? '';
+
     $atts = shortcode_atts( array( 'q' => '' ), $atts, 'faq_item' );
-    if ( ! empty( $atts['q'] ) ) {
-        $awbase_faq_items[] = array(
+    if ( ! empty( $atts['q'] ) && ! empty( $faq_id ) && isset( $faq_registry[ $faq_id ] ) ) {
+        $faq_registry[ $faq_id ][] = array(
             'q' => sanitize_text_field( $atts['q'] ),
             'a' => $content,
         );
+        $GLOBALS['awbase_faq_registry'] = $faq_registry;
     }
     return '';
 }

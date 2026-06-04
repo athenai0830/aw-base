@@ -95,7 +95,7 @@ function awbase_sitemap_output_index() {
     }
 
     // AI files（有効になっているものだけ）
-    $opts = get_option( 'awbase_settings', [] );
+    $opts = awbase_get_settings();
     $has_ai = ! empty( $opts['llms_txt_enable'] )      && $opts['llms_txt_enable']      === '1'
            || ! empty( $opts['llms_full_txt_enable'] ) && $opts['llms_full_txt_enable'] === '1'
            || ! empty( $opts['ai_index_md_enable'] )   && $opts['ai_index_md_enable']   === '1';
@@ -218,7 +218,7 @@ function awbase_sitemap_sub_terms( $taxonomy, $page, $per_page ) {
 // AI files sub-sitemap（llms.txt / llms-full.txt / ai-index.md）
 // ---------------------------------------------------------------------------
 function awbase_sitemap_sub_ai() {
-    $opts = get_option( 'awbase_settings', [] );
+    $opts = awbase_get_settings();
     if ( ! empty( $opts['llms_txt_enable'] ) && $opts['llms_txt_enable'] === '1' ) {
         echo awbase_sitemap_url( home_url( '/llms.txt' ), '', 'weekly' );
     }

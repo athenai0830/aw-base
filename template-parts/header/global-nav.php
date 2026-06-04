@@ -15,7 +15,7 @@ $align = $options['nav_align'] ? $options['nav_align'] : 'center';
                 'container'      => false,
             ) );
         } else {
-            echo '<ul><li><a href="' . home_url('/') . '">HOME</a></li></ul>';
+            echo '<ul><li><a href="' . esc_url( home_url('/') ) . '">HOME</a></li></ul>';
         }
         ?>
         <button class="nav-toggle" aria-label="メニューを開く" aria-expanded="false">

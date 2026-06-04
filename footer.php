@@ -2,8 +2,7 @@
 // AW-Base Footer
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-$saved         = get_option( 'awbase_settings', [] );
-$options       = is_array( $saved ) ? array_merge( awbase_get_default_settings(), $saved ) : awbase_get_default_settings();
+$options       = awbase_get_settings();
 $_show_sidebar = awbase_get_layout()['show_sidebar'];
 ?>
         </main><!-- #primary -->

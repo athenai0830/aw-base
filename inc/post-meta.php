@@ -216,7 +216,7 @@ function awbase_output_review_schema() {
     if ( ! $item_name || ! $rating ) return;
 
     // 著者名: WPユーザー → 組織名 → サイト名
-    $options     = get_option( 'awbase_settings', awbase_get_default_settings() );
+    $options     = awbase_get_settings();
     $author_name = ! empty( $options['schema_author_name'] )
         ? $options['schema_author_name']
         : get_the_author_meta( 'display_name', (int) get_post_field( 'post_author', $post_id ) );

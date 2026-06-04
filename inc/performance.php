@@ -209,7 +209,7 @@ add_action( 'wp_head', function() {
                 [ $w, $h ] = $sizes['awbase-card'];
                 $urls = awbase_get_thumb_urls( $thumb_id, $w, $h );
                 if ( ! empty( $urls['webp'] ) ) {
-                    echo '<link rel="preload" as="image" href="' . esc_url( $urls['webp'] ) . '" fetchpriority="high">' . "\n";
+                    echo '<link rel="preload" as="image" href="' . esc_url( $urls['webp'] ) . '" type="image/webp" fetchpriority="high">' . "\n";
                 } elseif ( ! empty( $urls['jpeg'] ) ) {
                     echo '<link rel="preload" as="image" href="' . esc_url( $urls['jpeg'] ) . '" fetchpriority="high">' . "\n";
                 } else {
