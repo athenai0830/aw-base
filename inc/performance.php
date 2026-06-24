@@ -190,7 +190,13 @@ add_action( 'wp_head', function() {
     if ( ! $thumb_id ) return;
     $src = wp_get_attachment_image_src( $thumb_id, 'full' );
     if ( $src ) {
-        echo '<link rel="preload" as="image" href="' . esc_url( $src[0] ) . '" fetchpriority="high">' . "\n";
+        $url = $src[0];
+        // Jetpack Image CDN(Photon)有効時は the_post_thumbnail の表示imgがCDN URLに
+        // 書き換わるため、preload URLも同じCDN URLに揃えて二重ダウンロードを防ぐ。
+        if ( function_exists( 'jetpack_photon_url' ) ) {
+            $url = jetpack_photon_url( $url );
+        }
+        echo '<link rel="preload" as="image" href="' . esc_url( $url ) . '" fetchpriority="high">' . "\n";
     }
 }, 1 );
 

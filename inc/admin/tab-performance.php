@@ -82,7 +82,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
                 <span class="awbase-toggle-slider"></span>
                 <span class="awbase-toggle-label">wp-block-library / global-styles CSS（合計約50KB）を除去する</span>
             </label>
-            <p class="description">Gutenberg ブロックのデフォルトスタイルを削除します。ブロックの見た目が崩れる場合はオフにしてください。</p>
+            <p class="description">Gutenberg ブロックのデフォルトスタイルを削除します。ブロックの見た目が崩れる場合はオフにしてください。<br>⚠️ Jetpack のブロック（カルーセル等）やコアブロックの装飾が崩れることがあります。これらを使う場合は <strong>オフ</strong> を推奨。</p>
         </td>
     </tr>
     <tr>
@@ -93,7 +93,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
                 <span class="awbase-toggle-slider"></span>
                 <span class="awbase-toggle-label">非ログイン時に jQuery（約90KB）を除去する</span>
             </label>
-            <p class="description">⚠️ jQuery を必要とするプラグイン（Contact Form 7 等）を使用している場合は <strong>オフ</strong> にしてください。</p>
+            <p class="description">⚠️ jQuery を必要とするプラグイン（Contact Form 7、<strong>Jetpack の共有ボタン・カルーセル・無限スクロール・連絡先フォーム</strong>等）を使用している場合は <strong>オフ</strong> にしてください。除去は非ログイン時のみ適用されるため、これらは主に訪問者側で動作しなくなります。</p>
         </td>
     </tr>
     <tr>

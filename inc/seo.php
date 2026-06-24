@@ -287,6 +287,11 @@ function awbase_output_seo_meta_tags() {
 }
 add_action( 'wp_head', 'awbase_output_seo_meta_tags', 2 );
 
+// Jetpack 共存: テーマが OGP / Twitter カードを常時出力するため、
+// Jetpack の Open Graph 生成を無効化して og:* / twitter:* の二重出力を防ぐ。
+// （Jetpack 不在時はフィルタが発火しないだけで無害）
+add_filter( 'jetpack_enable_open_graph', '__return_false' );
+
 // Title override
 function awbase_override_document_title($title) {
     if ( is_singular() ) {

@@ -2,6 +2,10 @@
 // AW-Base Admin Tab: SEO
 if ( ! defined( 'ABSPATH' ) ) exit;
 ?>
+<div class="notice notice-warning inline" style="margin:12px 0; padding:10px 12px;">
+    <p style="margin:0;"><strong><i class="fa-solid fa-circle-exclamation"></i> 専用SEOプラグインとの併用は非推奨です。</strong><br>
+    AW-Base は meta description / canonical / OGP / 構造化データ（JSON-LD）を内蔵で出力します。Yoast SEO・All in One SEO・Rank Math 等を同時に有効化すると、これらのタグが<strong>二重出力</strong>され、検索エンジンの解釈が不安定になります。SEOプラグインを使う場合は、本テーマのSEO機能と役割が重複しない構成にしてください。</p>
+</div>
 <table class="form-table">
     <tr>
         <th>サイトマップ生成</th>
