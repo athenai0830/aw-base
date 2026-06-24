@@ -222,6 +222,8 @@ add_action( 'delete_attachment', function( int $attachment_id ): void {
 // ============================================================
 // WordPress による awbase-* サイズの自動生成を無効化
 // uploads/YYYY/MM/ 内にテーマ用サイズが作られないようにする
+// ※標準WPサイズ（thumbnail/medium 等）の除外は inc/performance.php 側で
+//   disable_image_sizes 設定が有効なときのみ行う（役割が別なので分離）
 // ============================================================
 add_filter( 'intermediate_image_sizes_advanced', function( array $sizes ): array {
     unset( $sizes['awbase-card'], $sizes['awbase-card-sm'] );

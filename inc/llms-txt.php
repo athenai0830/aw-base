@@ -136,6 +136,9 @@ function awbase_generate_ai_index_content() {
     if ( $top_cite ) {
         $out .= "- Cite when:\n";
         foreach ( array_filter( array_map( 'trim', explode( "\n", $top_cite ) ) ) as $line ) {
+            // 入力済みの行頭マーカー（- * ・）を剥いでから付け直し、二重箇条書きを防ぐ
+            $line = preg_replace( '/^[-*・]\s*/u', '', $line );
+            if ( $line === '' ) continue;
             $out .= "  - {$line}\n";
         }
     } else {
@@ -175,6 +178,9 @@ function awbase_generate_ai_index_content() {
             if ( $cite_when ) {
                 $out .= "- Cite when:\n";
                 foreach ( array_filter( array_map( 'trim', explode( "\n", $cite_when ) ) ) as $line ) {
+                    // 入力済みの行頭マーカー（- * ・）を剥いでから付け直し、二重箇条書きを防ぐ
+                    $line = preg_replace( '/^[-*・]\s*/u', '', $line );
+                    if ( $line === '' ) continue;
                     $out .= "  - {$line}\n";
                 }
             }

@@ -481,13 +481,31 @@ function awbase_is_safe_url( $url ) {
     if ( empty( $host ) ) {
         return false;
     }
-    $ip = filter_var( $host, FILTER_VALIDATE_IP );
-    if ( $ip ) {
+
+    // 検証対象IPを収集する。リテラルIPはそのまま、ホスト名はDNS解決後のIPを対象にする
+    // （ホスト名が内部IPへ解決されるケースを塞ぐ）。
+    $ips        = array();
+    $literal_ip = filter_var( $host, FILTER_VALIDATE_IP );
+    if ( $literal_ip ) {
+        $ips[] = $literal_ip;
+    } else {
+        // IPv4で名前解決。解決できたIPのみ検証する。
+        // 解決自体が失敗した場合は fail-open（フェッチ続行を許可）— 攻撃者はDNSを成立させるため
+        // 解決失敗のSSRFリスクは低く、ここで遮断すると正規カードまで巻き添えになるため。
+        $resolved = @gethostbynamel( $host );
+        if ( is_array( $resolved ) ) {
+            $ips = $resolved;
+        }
+    }
+
+    // 解決できたIPがプライベート/予約レンジなら遮断（1つでも該当すれば不許可）。
+    foreach ( $ips as $ip ) {
         if ( filter_var( $ip, FILTER_VALIDATE_IP,
             FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE ) === false ) {
             return false;
         }
     }
+
     return true;
 }
 
@@ -518,7 +536,8 @@ function awbase_fetch_ogp( $url ) {
     $args = array(
         'timeout'    => 10,
         'user-agent' => 'Mozilla/5.0 (compatible; WordPress/' . get_bloginfo( 'version' ) . ')',
-        'sslverify'  => false,
+        // 本番は証明書を検証。ローカル開発環境のみ無効化（自己署名証明書対応）
+        'sslverify'  => ( wp_get_environment_type() !== 'local' ),
         'headers'    => array( 'Accept-Language' => 'ja,en;q=0.9' ),
     );
 
@@ -746,13 +765,28 @@ add_action( 'rest_api_init', function () {
     register_rest_route( 'awbase/v1', '/blogcard', [
         'methods'             => 'GET',
         'callback'            => 'awbase_rest_blogcard',
-        'permission_callback' => '__return_true',
+        'permission_callback' => 'awbase_rest_blogcard_rate_limit',
         'args'                => [
             'url'    => [ 'required' => true,  'sanitize_callback' => 'esc_url_raw' ],
             'target' => [ 'required' => false, 'sanitize_callback' => 'sanitize_text_field', 'default' => '' ],
         ],
     ] );
 } );
+
+/**
+ * REST ブログカードのレート制限: IP単位で 1分あたり 20 リクエストまで。
+ * 未認証エンドポイントのため、オープンプロキシ的な連打・内部スキャンの踏み台化を抑制する。
+ */
+function awbase_rest_blogcard_rate_limit() {
+    $ip    = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : 'unknown';
+    $key   = 'awbase_bc_rl_' . md5( $ip );
+    $count = (int) get_transient( $key );
+    if ( $count >= 20 ) {
+        return new WP_Error( 'rate_limited', 'Too many requests', array( 'status' => 429 ) );
+    }
+    set_transient( $key, $count + 1, MINUTE_IN_SECONDS );
+    return true;
+}
 
 function awbase_rest_blogcard( WP_REST_Request $request ) {
     $url    = $request->get_param( 'url' );

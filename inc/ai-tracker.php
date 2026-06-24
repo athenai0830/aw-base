@@ -2,6 +2,21 @@
 // AW-Base AI Traffic Tracker
 if ( ! defined( 'ABSPATH' ) ) exit;
 
+/**
+ * AIトラフィックログ用テーブルの存在チェック（リクエスト単位でメモ化）。
+ * 各所の `SHOW TABLES LIKE` を一元化し、1リクエストあたりのクエリを1回に抑える。
+ * テーマ／プラグイン（AWAIT）いずれが作成したテーブルでも「存在すればtrue」を返す。
+ */
+function awbase_ai_table_exists() {
+    static $exists = null;
+    if ( $exists === null ) {
+        global $wpdb;
+        $table  = $wpdb->prefix . 'ai_traffic_log';
+        $exists = $wpdb->get_var( "SHOW TABLES LIKE '{$table}'" ) === $table;
+    }
+    return $exists;
+}
+
 // ---------------------------------------------------------------------------
 // 0. テーブル作成（テーマ独自テーブル）
 // ---------------------------------------------------------------------------
@@ -87,11 +102,7 @@ function awbase_build_service_breakdown( $post_id ) {
     global $wpdb;
     $table = $wpdb->prefix . 'ai_traffic_log';
 
-    static $table_exists = null;
-    if ( $table_exists === null ) {
-        $table_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$table}'" ) === $table;
-    }
-    if ( ! $table_exists ) return [];
+    if ( ! awbase_ai_table_exists() ) return [];
 
     $rows = $wpdb->get_results( $wpdb->prepare(
         "SELECT ai_service, access_type, COUNT(*) AS cnt
@@ -137,7 +148,7 @@ function awbase_track_ai_bots() {
 
     global $wpdb;
     $table_name = $wpdb->prefix . 'ai_traffic_log';
-    if ( $wpdb->get_var( "SHOW TABLES LIKE '{$table_name}'" ) === $table_name ) {
+    if ( awbase_ai_table_exists() ) {
         $wpdb->insert( $table_name, [
             'post_id'        => $post_id,
             'ai_service'     => $ai_service,
@@ -179,8 +190,7 @@ function awbase_ai_tracker_csv_download() {
 
     global $wpdb;
     $table = $wpdb->prefix . 'ai_traffic_log';
-    $table_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$table}'" ) === $table;
-    if ( ! $table_exists ) wp_die( 'テーブルが存在しません。' );
+    if ( ! awbase_ai_table_exists() ) wp_die( 'テーブルが存在しません。' );
 
     $logs_all = $wpdb->get_results(
         "SELECT accessed_at, ai_service, access_type, bot_identifier, requested_url, user_agent, ip_address FROM {$table} ORDER BY accessed_at DESC",
@@ -195,6 +205,11 @@ function awbase_ai_tracker_csv_download() {
     echo implode( ',', [ '日時', 'サービス', '種別', 'ボット', 'URL', 'UA', 'IP' ] ) . "\n";
     foreach ( $logs_all as $row ) {
         echo implode( ',', array_map( function( $v ) {
+            $v = (string) $v;
+            // フォーミュラインジェクション対策: 危険文字始まりはシングルクォートで無害化
+            if ( $v !== '' && in_array( $v[0], [ '=', '+', '-', '@', "\t", "\r" ], true ) ) {
+                $v = "'" . $v;
+            }
             return '"' . str_replace( '"', '""', $v ) . '"';
         }, $row ) ) . "\n";
     }
@@ -209,7 +224,7 @@ function awbase_ai_tracker_page() {
     global $wpdb;
     $table = $wpdb->prefix . 'ai_traffic_log';
 
-    $table_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$table}'" ) === $table;
+    $table_exists = awbase_ai_table_exists();
 
     // ログクリア
     if ( isset( $_POST['awbase_clear_ai_log'] ) && check_admin_referer( 'awbase_clear_ai_log_nonce' ) ) {
@@ -443,7 +458,7 @@ add_filter( 'manage_pages_columns', 'awbase_add_ai_hits_column' );
 function awbase_get_ai_count( $permalink_path, $days = 0 ) {
     global $wpdb;
     $table_name = $wpdb->prefix . 'ai_traffic_log';
-    if ( $wpdb->get_var( "SHOW TABLES LIKE '{$table_name}'" ) !== $table_name ) return 0;
+    if ( ! awbase_ai_table_exists() ) return 0;
     $like = '%' . $wpdb->esc_like( $permalink_path ) . '%';
     if ( $days > 0 ) {
         $since = gmdate( 'Y-m-d H:i:s', strtotime( "-{$days} days" ) );
@@ -463,11 +478,7 @@ function awbase_show_ai_hits_column( $column_name, $post_id ) {
     global $wpdb;
     $table = $wpdb->prefix . 'ai_traffic_log';
 
-    static $table_exists = null;
-    if ( $table_exists === null ) {
-        $table_exists = $wpdb->get_var( "SHOW TABLES LIKE '{$table}'" ) === $table;
-    }
-    if ( ! $table_exists ) { echo '-'; return; }
+    if ( ! awbase_ai_table_exists() ) { echo '-'; return; }
 
     // ---- D/W/M/All カウント ----
     $now_ts = current_time( 'timestamp' );

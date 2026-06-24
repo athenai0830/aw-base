@@ -13,8 +13,9 @@ if ( $options['disable_image_sizes'] == '1' ) {
                $sizes['large'], $sizes['1536x1536'], $sizes['2048x2048'] );
         return $sizes;
     }
+    // 標準WPサイズの除外（テーマ用 awbase-* サイズの除外は inc/image-optimizer.php 側で常時実施）
     add_filter( 'intermediate_image_sizes_advanced', 'awbase_disable_image_sizes' );
-    add_filter( 'big_image_size_threshold', '__return_false' );
+    // big_image_size_threshold の無効化は inc/image-optimizer.php で常時登録済みのためここでは不要
 }
 
 // ============================================================

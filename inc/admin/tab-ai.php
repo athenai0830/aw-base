@@ -5,7 +5,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 // We will fetch stats from ai-traffic-tracker later on here
 global $wpdb;
 $table_name = $wpdb->prefix . 'ai_traffic_log';
-$table_exists = $wpdb->get_var("SHOW TABLES LIKE '{$table_name}'") === $table_name;
+$table_exists = awbase_ai_table_exists();
 $total_count = 0;
 if ($table_exists) {
     $total_count = $wpdb->get_var("SELECT COUNT(*) FROM {$table_name}");
