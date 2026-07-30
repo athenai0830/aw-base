@@ -109,6 +109,24 @@ function awbase_llms_txt_output() {
 add_action( 'template_redirect', 'awbase_llms_txt_output' );
 
 // ---------------------------------------------------------------------------
+// Cite when 入力の正規化
+// 投稿メタは手入力のため、行頭マーカーや NBSP が混ざった状態で保存されうる。
+// 生成側が "  - " を付与するため、剥がし漏れがあるとそのまま二重箇条書きになる。
+// ---------------------------------------------------------------------------
+function awbase_normalize_cite_when_lines( $raw ) {
+    $lines = [];
+    foreach ( explode( "\n", (string) $raw ) as $line ) {
+        // NBSP(U+00A0) や全角スペース・BOM は PHP の trim() では落ちないため先に通常空白へ寄せる
+        $line = preg_replace( '/[\p{Z}\x{FEFF}]+/u', ' ', $line ) ?? $line;
+        $line = trim( $line );
+        // 入力済みの行頭マーカー（- * ・）を重複分も含めて剥ぐ
+        $line = preg_replace( '/^(?:[-*・]\s*)+/u', '', $line ) ?? $line;
+        if ( $line !== '' ) $lines[] = $line;
+    }
+    return $lines;
+}
+
+// ---------------------------------------------------------------------------
 // ai-index.md コンテンツ動的生成
 // ---------------------------------------------------------------------------
 function awbase_generate_ai_index_content() {
@@ -135,10 +153,7 @@ function awbase_generate_ai_index_content() {
     $out .= "- Definition: "  . ( $top_definition  ?: $site_desc   ) . "\n";
     if ( $top_cite ) {
         $out .= "- Cite when:\n";
-        foreach ( array_filter( array_map( 'trim', explode( "\n", $top_cite ) ) ) as $line ) {
-            // 入力済みの行頭マーカー（- * ・）を剥いでから付け直し、二重箇条書きを防ぐ
-            $line = preg_replace( '/^[-*・]\s*/u', '', $line );
-            if ( $line === '' ) continue;
+        foreach ( awbase_normalize_cite_when_lines( $top_cite ) as $line ) {
             $out .= "  - {$line}\n";
         }
     } else {
@@ -177,10 +192,7 @@ function awbase_generate_ai_index_content() {
             if ( $definition )  $out .= "- Definition: {$definition}\n";
             if ( $cite_when ) {
                 $out .= "- Cite when:\n";
-                foreach ( array_filter( array_map( 'trim', explode( "\n", $cite_when ) ) ) as $line ) {
-                    // 入力済みの行頭マーカー（- * ・）を剥いでから付け直し、二重箇条書きを防ぐ
-                    $line = preg_replace( '/^[-*・]\s*/u', '', $line );
-                    if ( $line === '' ) continue;
+                foreach ( awbase_normalize_cite_when_lines( $cite_when ) as $line ) {
                     $out .= "  - {$line}\n";
                 }
             }
