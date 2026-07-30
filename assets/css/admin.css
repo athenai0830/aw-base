@@ -39,12 +39,15 @@ td.column-awbase_thumb { padding: 6px 8px !important; vertical-align: middle; }
 }
 .awbase-ai-trigger:hover { text-decoration: underline; }
 
-/* ツールチップ本体 */
+/* ツールチップ本体
+   AIカラムは date の直後＝一覧の右端に入るため、left 基準だと
+   nowrap のテーブルが右へ伸びて画面外にはみ出す。右端基準で左へ開く。 */
 .awbase-ai-tooltip {
     display: none;
     position: absolute;
     bottom: calc(100% + 8px);
-    left: 0;
+    right: 0;
+    left: auto;
     z-index: 100000;
     background: #333 !important;
     color: #fff !important;
@@ -55,12 +58,17 @@ td.column-awbase_thumb { padding: 6px 8px !important; vertical-align: middle; }
     font-weight: 400;
     line-height: 1.5;
     box-shadow: 0 4px 12px rgba(0,0,0,.25);
+    /* 画面幅が狭い場合の保険
+       ※ overflow は指定しないこと。overflow-x を auto にすると overflow-y も
+         auto に計算され、top:100% にある矢印(::after)が切れる。 */
+    max-width: calc(100vw - 40px);
 }
 .awbase-ai-tooltip::after {
     content: '';
     position: absolute;
     top: 100%;
-    left: 14px;
+    right: 14px;
+    left: auto;
     border: 6px solid transparent;
     border-top-color: #333;
 }
