@@ -37,6 +37,16 @@ add_action( 'template_redirect', function() {
 
     if ( ! $sitemap && ! $type ) return;
 
+    // 管理画面「XMLサイトマップを生成する」が OFF なら 404
+    $opts = awbase_get_settings();
+    if ( ( $opts['sitemap_enable'] ?? '1' ) !== '1' ) {
+        global $wp_query;
+        $wp_query->set_404();
+        status_header( 404 );
+        nocache_headers();
+        return;
+    }
+
     $allowed = [ 'pages', 'posts', 'categories', 'tags', 'ai' ];
     if ( $type && ! in_array( $type, $allowed, true ) ) {
         status_header( 404 );
@@ -60,16 +70,13 @@ add_action( 'template_redirect', function() {
 // ---------------------------------------------------------------------------
 // Sitemap index
 // ---------------------------------------------------------------------------
-function awbase_sitemap_xsl_pi() {
-    $xsl = get_template_directory_uri() . '/sitemap.xsl';
-    echo '<?xml-stylesheet type="text/xsl" href="' . esc_url( $xsl ) . '"?>' . "\n";
-}
+// XSLT（xml-stylesheet 処理命令）は Chrome がブラウザ内 XSLT を廃止予定のため使用しない。
+// ブラウザでは素の XML（ツリー表示）になる。人向けの一覧は /sitemap/ ページ（ショートコード）を使う。
 
 function awbase_sitemap_output_index() {
     $n = AWBASE_SITEMAP_PER_PAGE;
 
     echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
-    awbase_sitemap_xsl_pi();
     echo '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
 
     // Pages: TOPページ（仮想スロット）＋固定ページ
@@ -122,7 +129,6 @@ function awbase_sitemap_index_group( $type, $total, $per_page ) {
 // ---------------------------------------------------------------------------
 function awbase_sitemap_output_sub( $type, $page ) {
     echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
-    awbase_sitemap_xsl_pi();
     echo '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
 
     $n = AWBASE_SITEMAP_PER_PAGE;

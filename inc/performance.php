@@ -71,9 +71,10 @@ if ( $options['css_minify'] == '1' ) {
 // ============================================================
 // 5. Sitemap toggle
 // ============================================================
-if ( $options['sitemap_enable'] !== '1' ) {
-    add_filter( 'wp_sitemaps_enabled', '__return_false' );
-}
+// WordPress 標準の /wp-sitemap.xml は常に無効化する。
+// ・ON  : テーマの /sitemap.xml（inc/sitemap-xml.php）と内容が重複するため
+// ・OFF : サイトマップ自体を出さない設定のため
+add_filter( 'wp_sitemaps_enabled', '__return_false' );
 
 // ============================================================
 // 6. WordPress 標準ブロートの除去
