@@ -539,6 +539,8 @@ function awbase_fetch_ogp( $url ) {
         // 本番は証明書を検証。ローカル開発環境のみ無効化（自己署名証明書対応）
         'sslverify'  => ( wp_get_environment_type() !== 'local' ),
         'headers'    => array( 'Accept-Language' => 'ja,en;q=0.9' ),
+        // <head> の OGP だけ読めればよいので受信サイズを制限（巨大レスポンスでのメモリ枯渇防止）
+        'limit_response_size' => MB_IN_BYTES,
     );
 
     // ローカル環境等の Basic 認証を透過的に引き継ぐ（本番環境では無効）
@@ -550,7 +552,9 @@ function awbase_fetch_ogp( $url ) {
         }
     }
 
-    $response = wp_remote_get( $url, $args );
+    // wp_safe_remote_get: リダイレクト先も毎回検証（内部IPへのリダイレクトによる SSRF を遮断）し、
+    // ポートを 80/443/8080 に限定する。
+    $response = wp_safe_remote_get( $url, $args );
 
     if ( is_wp_error( $response ) || wp_remote_retrieve_response_code( $response ) !== 200 ) {
         set_transient( $cache_key, $og, HOUR_IN_SECONDS );
@@ -777,6 +781,11 @@ add_action( 'rest_api_init', function () {
  * REST ブログカードのレート制限: IP単位で 1分あたり 20 リクエストまで。
  * 未認証エンドポイントのため、オープンプロキシ的な連打・内部スキャンの踏み台化を抑制する。
  */
+// 未キャッシュ URL の新規 OGP 取得（REST 経由）のサイト全体上限 / 1時間
+if ( ! defined( 'AWBASE_BLOGCARD_NEW_FETCH_LIMIT' ) ) {
+    define( 'AWBASE_BLOGCARD_NEW_FETCH_LIMIT', 200 );
+}
+
 function awbase_rest_blogcard_rate_limit() {
     $ip    = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : 'unknown';
     $key   = 'awbase_bc_rl_' . md5( $ip );
@@ -795,6 +804,18 @@ function awbase_rest_blogcard( WP_REST_Request $request ) {
     $scheme = wp_parse_url( $url, PHP_URL_SCHEME );
     if ( ! in_array( $scheme, [ 'http', 'https' ], true ) ) {
         return new WP_Error( 'invalid_url', 'Invalid URL scheme', [ 'status' => 400 ] );
+    }
+
+    // 未キャッシュ URL の新規取得はサイト全体で 1時間あたり上限を設ける
+    // （多数の IP から任意 URL を投げられた際の外部通信・transient 肥大化を抑制）。
+    // キャッシュ済み URL は上限の対象外なので、通常の閲覧には影響しない。
+    if ( get_transient( 'awbase_ogp_' . md5( $url ) ) === false ) {
+        $global_key   = 'awbase_bc_rl_global';
+        $global_count = (int) get_transient( $global_key );
+        if ( $global_count >= AWBASE_BLOGCARD_NEW_FETCH_LIMIT ) {
+            return new WP_Error( 'rate_limited', 'Too many requests', [ 'status' => 429 ] );
+        }
+        set_transient( $global_key, $global_count + 1, HOUR_IN_SECONDS );
     }
 
     $og    = awbase_fetch_ogp( $url );
@@ -844,7 +865,7 @@ function awbase_faq_shortcode( $atts, $content = null ) {
                 ),
             );
         }
-        echo '<script type="application/ld+json">' . wp_json_encode( $schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES ) . '</script>';
+        echo '<script type="application/ld+json">' . wp_json_encode( $schema, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_UNESCAPED_SLASHES ) . '</script>';
     }
 
     // FAQ HTML

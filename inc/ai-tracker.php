@@ -378,7 +378,7 @@ function awbase_ai_tracker_page() {
 
         <?php if ( $table_exists ) :
             $per_page = 50;
-            $page     = isset( $_GET['paged'] ) ? intval( $_GET['paged'] ) : 1;
+            $page     = isset( $_GET['paged'] ) ? max( 1, intval( $_GET['paged'] ) ) : 1;
             $offset   = ( $page - 1 ) * $per_page;
             $total    = $wpdb->get_var( "SELECT COUNT(id) FROM {$table}" );
             $logs     = $wpdb->get_results( "SELECT * FROM {$table} ORDER BY accessed_at DESC LIMIT {$per_page} OFFSET {$offset}" );

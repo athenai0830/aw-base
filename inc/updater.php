@@ -89,9 +89,14 @@ add_action( 'load-update-core.php', 'awbase_delete_update_cache' );
  * GitHubのzipを展開した際のフォルダ名を正しく "aw-base" に修正する
  * （GitHub自動生成zipは "athenai0830-aw-base-{hash}" というフォルダ名になるため）
  */
-function awbase_fix_theme_update_source( $source, $remote_source, $upgrader ) {
-    // フォルダ名に "aw-base" が含まれている場合のみ処理
-    if ( strpos( basename( $source ), 'aw-base' ) === false ) {
+function awbase_fix_theme_update_source( $source, $remote_source, $upgrader, $hook_extra = [] ) {
+    // AW-Base 本体のテーマ更新に限定する。
+    // （フォルダ名の部分一致だけで判定すると、aw-base-child など別テーマ・プラグインの
+    //   インストール時にも "aw-base" へ改名され、親テーマを上書きするおそれがある）
+    if ( ! ( $upgrader instanceof Theme_Upgrader ) ) {
+        return $source;
+    }
+    if ( ( $hook_extra['theme'] ?? '' ) !== 'aw-base' ) {
         return $source;
     }
 
@@ -118,4 +123,4 @@ function awbase_fix_theme_update_source( $source, $remote_source, $upgrader ) {
 
     return $source;
 }
-add_filter( 'upgrader_source_selection', 'awbase_fix_theme_update_source', 10, 3 );
+add_filter( 'upgrader_source_selection', 'awbase_fix_theme_update_source', 10, 4 );

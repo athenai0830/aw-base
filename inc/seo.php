@@ -106,6 +106,9 @@ function awbase_save_taxonomy_custom_meta( $term_id ) {
          ! wp_verify_nonce( $_POST['awbase_taxonomy_nonce'], 'awbase_save_taxonomy_meta' ) ) {
         return;
     }
+    if ( ! current_user_can( 'edit_term', $term_id ) ) {
+        return;
+    }
     if ( isset( $_POST['awbase_seo_title'] ) ) {
         update_term_meta( $term_id, 'awbase_seo_title', sanitize_text_field( $_POST['awbase_seo_title'] ) );
     }
@@ -340,7 +343,7 @@ function awbase_output_json_ld() {
     if ( $site_desc ) {
         $website['description'] = $site_desc;
     }
-    echo '<script type="application/ld+json">' . wp_json_encode( $website, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES ) . '</script>' . "\n";
+    echo '<script type="application/ld+json">' . wp_json_encode( $website, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_UNESCAPED_SLASHES ) . '</script>' . "\n";
 
     // --------------------------------------------------------
     // Blog schema（フロントページ / ブログトップページ）
@@ -389,7 +392,7 @@ function awbase_output_json_ld() {
         if ( $blog_post_obj ) {
             $blog_schema['blogPost'] = $blog_post_obj;
         }
-        echo '<script type="application/ld+json">' . wp_json_encode( $blog_schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES ) . '</script>' . "\n";
+        echo '<script type="application/ld+json">' . wp_json_encode( $blog_schema, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_UNESCAPED_SLASHES ) . '</script>' . "\n";
     }
 
     // --------------------------------------------------------
@@ -419,7 +422,7 @@ function awbase_output_json_ld() {
             if ( $author_url )    $founder['url']           = $author_url;
             $publisher_obj['founder'] = $founder;
         }
-        echo '<script type="application/ld+json">' . wp_json_encode( $publisher_obj, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES ) . '</script>' . "\n";
+        echo '<script type="application/ld+json">' . wp_json_encode( $publisher_obj, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_UNESCAPED_SLASHES ) . '</script>' . "\n";
     }
 
     // --------------------------------------------------------
@@ -493,7 +496,7 @@ function awbase_output_json_ld() {
             $schema['keywords'] = implode( ', ', array_map( function( $t ) { return $t->name; }, $tags ) );
         }
 
-        echo '<script type="application/ld+json">' . wp_json_encode( $schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES ) . '</script>' . "\n";
+        echo '<script type="application/ld+json">' . wp_json_encode( $schema, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_UNESCAPED_SLASHES ) . '</script>' . "\n";
     }
 
     // --------------------------------------------------------
@@ -557,7 +560,7 @@ function awbase_output_json_ld() {
                 '@type'           => 'BreadcrumbList',
                 'itemListElement' => $items,
             );
-            echo '<script type="application/ld+json">' . wp_json_encode( $breadcrumb, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES ) . '</script>' . "\n";
+            echo '<script type="application/ld+json">' . wp_json_encode( $breadcrumb, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_UNESCAPED_SLASHES ) . '</script>' . "\n";
         }
     }
 }

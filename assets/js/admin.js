@@ -187,12 +187,15 @@ jQuery(document).ready(function($) {
 
                         if ( d.unprocessed && d.unprocessed.length > 0 ) {
                             $progressStatus.text( '完了（未処理: ' + d.unprocessed.length + ' 枚）' );
-                            var listHtml = '<p style="margin:10px 0 4px;font-weight:600;">処理できなかった画像（' + d.unprocessed.length + ' 枚）:</p><ul style="margin:0;max-height:200px;overflow-y:auto;background:#f9f9f9;border:1px solid #ddd;padding:8px 8px 8px 24px;">';
+                            var $list = $( '<ul style="margin:0;max-height:200px;overflow-y:auto;background:#f9f9f9;border:1px solid #ddd;padding:8px 8px 8px 24px;"></ul>' );
                             $.each( d.unprocessed, function( i, item ) {
-                                listHtml += '<li style="font-size:12px;">' + item.name + '</li>';
+                                // ファイル名は HTML として解釈させない
+                                $list.append( $( '<li style="font-size:12px;"></li>' ).text( item.name ) );
                             });
-                            listHtml += '</ul>';
-                            $resultMsg.html( listHtml ).attr( 'class', '' ).show();
+                            $resultMsg.empty()
+                                .append( $( '<p style="margin:10px 0 4px;font-weight:600;"></p>' ).text( '処理できなかった画像（' + d.unprocessed.length + ' 枚）:' ) )
+                                .append( $list )
+                                .attr( 'class', '' ).show();
                         } else {
                             $progressStatus.text( '完了！ すべて最適化しました' );
                             $optimizedCount.text( $totalCount.text() );
