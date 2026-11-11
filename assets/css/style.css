@@ -4023,3 +4023,35 @@ body.home.layout-1c .site-main-wrap {
   text-align: center;
 }
 
+
+/* --------------------------------------------------------------------------
+   画像「クリックで拡大」（WP 標準ライトボックス）の位置補正
+   theme.json のないテーマでは、WP 本体（wp_restore_image_outer_container）が表示時に
+   中央・左右寄せの画像を <div class="wp-block-image"><figure class="aligncenter"> に組み替える。
+   このため拡大用 figure に wp-block-image クラスが付かず、WP 本体の
+   `.wp-lightbox-overlay .wp-block-image` 指定が効かない。そのため画像が本文の縮小サイズのまま
+   枠の左上に表示されていた。クラスの有無に関係なく同じ指定を当てる。
+   -------------------------------------------------------------------------- */
+.wp-lightbox-overlay .lightbox-image-container > figure {
+  align-items: center;
+  box-sizing: border-box;
+  display: flex;
+  height: 100%;
+  justify-content: center;
+  margin: 0;
+  position: relative;
+  transform-origin: 0 0;
+  width: 100%;
+  z-index: 3000000;
+}
+
+.wp-lightbox-overlay .lightbox-image-container > figure img {
+  height: var(--wp--lightbox-image-height);
+  min-height: var(--wp--lightbox-image-height);
+  min-width: var(--wp--lightbox-image-width);
+  width: var(--wp--lightbox-image-width);
+}
+
+.wp-lightbox-overlay .lightbox-image-container > figure figcaption {
+  display: none;
+}
