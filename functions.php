@@ -102,6 +102,7 @@ require_once AWBASE_DIR . '/inc/image-optimizer.php';
 require_once AWBASE_DIR . '/inc/performance.php';
 require_once AWBASE_DIR . '/inc/shortcodes.php';
 require_once AWBASE_DIR . '/inc/blocks.php';
+require_once AWBASE_DIR . '/inc/table-width.php';
 require_once AWBASE_DIR . '/inc/widgets.php';
 require_once AWBASE_DIR . '/inc/llms-txt.php';
 require_once AWBASE_DIR . '/inc/sitemap-xml.php';
