@@ -614,6 +614,99 @@ function awbase_fetch_ogp( $url ) {
     return $og;
 }
 
+/**
+ * リダイレクト照合用にパスを正規化する（URLデコード・末尾スラッシュ付き）。
+ */
+function awbase_normalize_redirect_path( $path ) {
+    $path = '/' . trim( rawurldecode( (string) $path ), '/' );
+    return $path === '/' ? '/' : $path . '/';
+}
+
+/**
+ * サイト直下の .htaccess から「Redirect 301 /旧/ /新/」（RedirectPermanent 含む）の対応表を作る。
+ * 旧URLの転送はサーバー設定（WordPress 外）で行っており、サーバーから自サイトへの HTTP 取得もできないため、
+ * 設定ファイルを直接読んで転送先を特定する。ファイル更新時刻が変わるまで transient にキャッシュする。
+ *
+ * @return array 正規化済み旧パス => 転送先（パスまたはURL）
+ */
+function awbase_get_htaccess_redirect_map() {
+    static $map = null;
+    if ( $map !== null ) {
+        return $map;
+    }
+    $map  = array();
+    $file = ABSPATH . '.htaccess';
+    if ( is_readable( $file ) ) {
+        $mtime  = (int) filemtime( $file );
+        $cached = get_transient( 'awbase_redirect_map' );
+        if ( is_array( $cached ) && isset( $cached['mtime'], $cached['map'] ) && $cached['mtime'] === $mtime ) {
+            $map = $cached['map'];
+        } else {
+            $lines = file( $file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES );
+            foreach ( (array) $lines as $line ) {
+                if ( preg_match( '/^\s*(?:Redirect\s+(?:301|permanent)|RedirectPermanent)\s+(\/\S*)\s+(\S+)\s*$/i', $line, $m ) ) {
+                    $map[ awbase_normalize_redirect_path( $m[1] ) ] = $m[2];
+                }
+            }
+            set_transient( 'awbase_redirect_map', array( 'mtime' => $mtime, 'map' => $map ), WEEK_IN_SECONDS );
+        }
+    }
+    /** 対応表を追加・上書きしたい場合のフィルター（キー: 正規化済み旧パス） */
+    $map = (array) apply_filters( 'awbase_blogcard_redirect_map', $map );
+    return $map;
+}
+
+/**
+ * 自サイトの旧URLから現行の投稿IDを特定する（url_to_postid で特定できなかった場合用）。
+ *  1. .htaccess の 301 転送先（最大3段）
+ *  2. WordPress の旧スラッグ記録（_wp_old_slug）
+ *
+ * @return int 投稿ID（特定できなければ 0）
+ */
+function awbase_resolve_redirected_post_id( $url ) {
+    $parsed = wp_parse_url( $url );
+    $home   = wp_parse_url( home_url() );
+    if ( empty( $parsed['path'] ) || $parsed['path'] === '/' ) {
+        return 0;
+    }
+    // 他ドメインは対象外（ホストなし＝相対URLは自サイト扱い）
+    if ( isset( $parsed['host'] ) && strtolower( $parsed['host'] ) !== strtolower( $home['host'] ?? '' ) ) {
+        return 0;
+    }
+
+    $map  = awbase_get_htaccess_redirect_map();
+    $path = awbase_normalize_redirect_path( $parsed['path'] );
+    for ( $i = 0; $i < 3 && isset( $map[ $path ] ); $i++ ) {
+        $target = wp_parse_url( $map[ $path ] );
+        if ( isset( $target['host'] ) && strtolower( $target['host'] ) !== strtolower( $home['host'] ?? '' ) ) {
+            return 0; // 外部サイトへの転送
+        }
+        $target_path = $target['path'] ?? '/';
+        $post_id     = url_to_postid( home_url( $target_path ) );
+        if ( $post_id ) {
+            return $post_id;
+        }
+        $path = awbase_normalize_redirect_path( $target_path );
+    }
+
+    $slug = sanitize_title( basename( untrailingslashit( $parsed['path'] ) ) );
+    if ( $slug !== '' ) {
+        $ids = get_posts( array(
+            'post_type'      => 'any',
+            'post_status'    => 'publish',
+            'meta_key'       => '_wp_old_slug',
+            'meta_value'     => $slug,
+            'fields'         => 'ids',
+            'posts_per_page' => 1,
+            'no_found_rows'  => true,
+        ) );
+        if ( ! empty( $ids ) ) {
+            return (int) $ids[0];
+        }
+    }
+    return 0;
+}
+
 function awbase_blogcard_shortcode( $atts ) {
     $atts = shortcode_atts( array(
         'url'    => '',
@@ -657,6 +750,14 @@ function awbase_blogcard_shortcode( $atts ) {
         if ( isset( $parsed_url['path'] ) &&
              ( ! isset( $parsed_url['host'] ) || ( isset( $parsed_home['host'] ) && $parsed_url['host'] !== $parsed_home['host'] ) ) ) {
             $post_id = url_to_postid( home_url( $parsed_url['path'] ) );
+        }
+    }
+    // 自サイトの旧URL（.htaccess の 301 / 旧スラッグ）なら転送先の投稿として扱い、リンクも現行URLにする
+    if ( ! $post_id ) {
+        $post_id = awbase_resolve_redirected_post_id( $atts['url'] );
+        if ( $post_id ) {
+            $fragment = wp_parse_url( $atts['url'], PHP_URL_FRAGMENT );
+            $url      = esc_url( get_permalink( $post_id ) . ( $fragment ? '#' . $fragment : '' ) );
         }
     }
     $is_inner = ( $post_id > 0 );

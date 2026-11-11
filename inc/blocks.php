@@ -329,6 +329,14 @@ function awbase_embed_fallback_filter( $block_content, $block ) {
         return $block_content;
     }
 
+    // 自サイトの旧URL（301 で転送される）を埋め込んだ場合は、転送先の記事のブログカードで表示する
+    if ( function_exists( 'awbase_resolve_redirected_post_id' ) ) {
+        $post_id = awbase_resolve_redirected_post_id( $url );
+        if ( $post_id ) {
+            return awbase_blogcard_shortcode( array( 'url' => get_permalink( $post_id ), 'id' => (string) $post_id ) );
+        }
+    }
+
     return awbase_render_linkcard( $url );
 }
 
